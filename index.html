@@ -98,6 +98,10 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
 .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .sync-label{font-size:10px;color:#aaa;margin-left:4px}
+.pos-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.pos-pill{padding:10px 16px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;border:2px solid #ccc;background:#f0f0f0;color:#555;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.15);font-family:inherit;min-width:52px;text-align:center}
+.pos-pill.sel{color:#fff;border-color:transparent}
+.pos-pill:active{opacity:0.75;transform:scale(0.94)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -257,13 +261,13 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
   <div class="fr"><div><label>First name</label><input id="npF" placeholder="Sarah"></div><div><label>Last name</label><input id="npL" placeholder="Jones"></div></div>
   <div class="mb"><label>Positions — tap to select up to 3</label>
     <div class="pos-pills" id="npPills">
-      <div class="pos-pill" data-pos="GS" onclick="togglePosPill(this)">GS</div>
-      <div class="pos-pill" data-pos="GA" onclick="togglePosPill(this)">GA</div>
-      <div class="pos-pill" data-pos="WA" onclick="togglePosPill(this)">WA</div>
-      <div class="pos-pill" data-pos="C"  onclick="togglePosPill(this)">C</div>
-      <div class="pos-pill" data-pos="WD" onclick="togglePosPill(this)">WD</div>
-      <div class="pos-pill" data-pos="GD" onclick="togglePosPill(this)">GD</div>
-      <div class="pos-pill" data-pos="GK" onclick="togglePosPill(this)">GK</div>
+      <button type="button" class="pos-pill" data-pos="GS" data-col="#00897b" onclick="togglePosPill(this)">GS</button>
+      <button type="button" class="pos-pill" data-pos="GA" data-col="#1D9E75" onclick="togglePosPill(this)">GA</button>
+      <button type="button" class="pos-pill" data-pos="WA" data-col="#1565c0" onclick="togglePosPill(this)">WA</button>
+      <button type="button" class="pos-pill" data-pos="C"  data-col="#6a1b9a" onclick="togglePosPill(this)">C</button>
+      <button type="button" class="pos-pill" data-pos="WD" data-col="#ad1457" onclick="togglePosPill(this)">WD</button>
+      <button type="button" class="pos-pill" data-pos="GD" data-col="#c62828" onclick="togglePosPill(this)">GD</button>
+      <button type="button" class="pos-pill" data-pos="GK" data-col="#e65100" onclick="togglePosPill(this)">GK</button>
     </div>
     <div style="font-size:10px;color:#aaa;margin-top:4px" id="npPillsHint">No positions selected</div>
   </div>
@@ -500,6 +504,44 @@ function doSub(){
 }
 
 /* ── CRUD ── */
+function togglePosPill(el){
+  var pills=document.querySelectorAll('#npPills .pos-pill');
+  var sel=Array.from(pills).filter(function(p){return p.classList.contains('sel');});
+  if(el.classList.contains('sel')){
+    el.classList.remove('sel');
+    el.style.background='#f0f0f0';
+    el.style.borderColor='#ccc';
+    el.style.color='#555';
+  } else {
+    if(sel.length>=3){alert('You can select up to 3 positions.');return;}
+    var col=el.dataset.col||PC[el.dataset.pos]||'#888';
+    el.classList.add('sel');
+    el.style.background=col;
+    el.style.borderColor=col;
+    el.style.color='#fff';
+  }
+  var nowSel=Array.from(document.querySelectorAll('#npPills .pos-pill.sel')).map(function(p){return p.dataset.pos;});
+  document.getElementById('npPillsHint').textContent=nowSel.length?nowSel.join(', '):'No positions selected';
+}
+function togglePosPillEdit(el){
+  var pills=document.querySelectorAll('#editPills .pos-pill');
+  var sel=Array.from(pills).filter(function(p){return p.classList.contains('sel');});
+  if(el.classList.contains('sel')){
+    el.classList.remove('sel');
+    el.style.background='#f0f0f0';
+    el.style.borderColor='#ccc';
+    el.style.color='#555';
+  } else {
+    if(sel.length>=3){alert('You can select up to 3 positions.');return;}
+    var col=el.dataset.col||PC[el.dataset.pos]||'#888';
+    el.classList.add('sel');
+    el.style.background=col;
+    el.style.borderColor=col;
+    el.style.color='#fff';
+  }
+  var nowSel=Array.from(document.querySelectorAll('#editPills .pos-pill.sel')).map(function(p){return p.dataset.pos;});
+  document.getElementById('editPillsHint').textContent=nowSel.length?nowSel.join(', '):'No positions selected';
+}
 function addPlayer(){
   var f=document.getElementById('npF').value.trim(),l=document.getElementById('npL').value.trim();if(!f||!l)return;
   D.players.push({id:D.nid++,first:f,last:l,pos:document.getElementById('npP').value,avail:document.getElementById('npA').value,notes:document.getElementById('npN').value});
@@ -538,7 +580,7 @@ function openPD(id){
   var st=D.sStats.find(function(s){return s.pid===id;});
   var positions=p.positions||[p.pos];
   var posDots=positions.map(function(pos){return'<span class="pdot" style="background:'+PC[pos]+';width:28px;height:28px;font-size:9px;margin-right:3px">'+pos+'</span>';}).join('');
-  var editPillsHtml='<div class="pos-pills" id="editPills">'+['GS','GA','WA','C','WD','GD','GK'].map(function(pos){var isSel=positions.indexOf(pos)>-1;var col=PC[pos]||'#888';return'<div class="pos-pill'+(isSel?' sel':'')+'" data-pos="'+pos+'" onclick="togglePosPillEdit(this)" style="'+(isSel?'background:'+col+';border-color:'+col+';color:#fff':'')+'">'+pos+'</div>';}).join('')+'</div><div style="font-size:10px;color:#aaa;margin-top:4px" id="editPillsHint">'+positions.join(', ')+'</div>';
+  var editPillsHtml='<div class="pos-pills" id="editPills">'+['GS','GA','WA','C','WD','GD','GK'].map(function(pos){var isSel=positions.indexOf(pos)>-1;var col=PC[pos]||'#888';return'<button type="button" class="pos-pill'+(isSel?' sel':'')+'" data-pos="'+pos+'" data-col="'+col+'" onclick="togglePosPillEdit(this)" style="background:'+(isSel?col:'#f0f0f0')+';border-color:'+(isSel?col:'#ccc')+';color:'+(isSel?'#fff':'#555')+'">'+pos+'</button>';}).join('')+'</div><div style="font-size:10px;color:#aaa;margin-top:4px" id="editPillsHint">'+positions.join(', ')+'</div>';color:#aaa;margin-top:4px" id="editPillsHint">'+positions.join(', ')+'</div>';
   document.getElementById('plDtBody').innerHTML=
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'+posDots+'<span class="bdg '+ab[p.avail]+'">'+p.avail+'</span>'+(p.notes?'<span style="font-size:11px;color:#888">'+p.notes+'</span>':'')+'</div>'+
     '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:#888;margin-bottom:5px">Edit positions (up to 3)</div>'+editPillsHtml+'<button class="btn btnsm btnp" style="margin-top:8px;width:100%" onclick="saveEditPositions('+id+')">Save positions</button></div>'+
@@ -547,7 +589,7 @@ function openPD(id){
   OM('mPl');
 }
 function saveEditPositions(id){
-  var selPills=Array.from(document.querySelectorAll('#editPills .pos-pill.sel')).map(function(p){return p.dataset.pos;});
+  var selPills=Array.from(document.querySelectorAll('#npPills .pos-pill.sel')).map(function(p){return p.dataset.pos;});
   if(!selPills.length){alert('Please select at least one position.');return;}
   var p=D.players.find(function(x){return x.id===id;});
   if(p){p.positions=selPills;p.pos=selPills[0];}
