@@ -961,7 +961,8 @@ function saveGame(){
   function accumPid(pid, posKey){
     if(!pid)return;
     var st=D.sStats.find(function(s){return s.pid===pid;});
-    if(!st){st={pid:pid,games:0,goals:0,attempts:0,assists:0,cpr:0,pickup:0,dReb:0,oReb:0,intercepts:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0,qtr:{1:{goals:0,att:0,int:0,cpr:0},2:{goals:0,att:0,int:0,cpr:0},3:{goals:0,att:0,int:0,cpr:0},4:{goals:0,att:0,int:0,cpr:0}}};D.sStats.push(st);}
+    var emptyQtr=function(){return{goals:0,attempts:0,intercepts:0,cpr:0,assists:0,pickup:0,dReb:0,oReb:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0};};
+    if(!st){st={pid:pid,games:0,goals:0,attempts:0,assists:0,cpr:0,pickup:0,dReb:0,oReb:0,intercepts:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0,qtr:{1:emptyQtr(),2:emptyQtr(),3:emptyQtr(),4:emptyQtr()}};D.sStats.push(st);}
     if(!savedPids[pid]){st.games++;savedPids[pid]=true;saved++;}
     ['goals','attempts','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'].forEach(function(k){
       var tot=0;
@@ -975,14 +976,14 @@ function saveGame(){
       }
       st[k]=(st[k]||0)+tot;
     });
+    var ALL_QTR_KEYS=['goals','attempts','intercepts','cpr','assists','pickup','dReb','oReb','deflections','turnovers','badpass','badhands','contact','obstruction'];
     for(var q2=1;q2<=4;q2++){
-      if(!st.qtr[q2])st.qtr[q2]={goals:0,att:0,int:0,cpr:0};
+      if(!st.qtr[q2])st.qtr[q2]=emptyQtr();
       Object.keys(D.live.stats).forEach(function(pk){
         if(pk===posKey||pk.indexOf(posKey+'_')===0){
-          st.qtr[q2].goals+=(D.live.stats[pk]&&D.live.stats[pk][q2]?D.live.stats[pk][q2].goals||0:0);
-          st.qtr[q2].att+=(D.live.stats[pk]&&D.live.stats[pk][q2]?D.live.stats[pk][q2].attempts||0:0);
-          st.qtr[q2].int+=(D.live.stats[pk]&&D.live.stats[pk][q2]?D.live.stats[pk][q2].intercepts||0:0);
-          st.qtr[q2].cpr+=(D.live.stats[pk]&&D.live.stats[pk][q2]?D.live.stats[pk][q2].cpr||0:0);
+          ALL_QTR_KEYS.forEach(function(k2){
+            st.qtr[q2][k2]+=(D.live.stats[pk]&&D.live.stats[pk][q2]?D.live.stats[pk][q2][k2]||0:0);
+          });
         }
       });
     }
@@ -1084,15 +1085,40 @@ function renderSumContent(){
       h+='<td>'+(s.missOwn||0)+'</td><td class="lo">'+(s.missOpp||0)+'</td><td>'+(s.oReb||0)+'</td></tr>';
     });
     h+='</tbody></table></div>';
-    /* quarter breakdown */
-    h+='<div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;margin:10px 0 6px">Goals by quarter</div>';
-    h+='<div class="card ovfx"><table><thead><tr><th>Player</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Total</th></tr></thead><tbody>';
+    /* all stats by quarter per player */
+    h+='<div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;margin:10px 0 6px">All stats by quarter — per player</div>';
     sorted.forEach(function(s){
-      h+='<tr><td style="font-weight:600;white-space:nowrap">'+pName(s.pid)+'</td>';
-      for(var q=1;q<=4;q++){var g=s.qtr&&s.qtr[q]?s.qtr[q].goals||0:0;h+='<td>'+g+'</td>';}
-      h+='<td class="hi">'+s.goals+'</td></tr>';
+      var name=pName(s.pid);
+      h+='<div style="font-size:12px;font-weight:700;margin:8px 0 4px;color:#444">'+name+'</div>';
+      h+='<div class="card ovfx" style="margin-bottom:8px"><table style="min-width:600px"><thead><tr>';
+      h+='<th>Quarter</th><th>Goals</th><th>Att</th><th>Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th>';
+      h+='</tr></thead><tbody>';
+      var totals={goals:0,attempts:0,intercepts:0,cpr:0,assists:0,pickup:0,dReb:0,oReb:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0};
+      for(var q=1;q<=4;q++){
+        var qd=s.qtr&&s.qtr[q]?s.qtr[q]:{};
+        var qg=qd.goals||0,qa=qd.attempts||0,qi=qd.intercepts||0,qc=qd.cpr||0;
+        var qas=qd.assists||0,qpu=qd.pickup||0,qdr=qd.dReb||0,qor=qd.oReb||0;
+        var qde=qd.deflections||0,qto=qd.turnovers||0,qbp=qd.badpass||0,qbh=qd.badhands||0,qco=qd.contact||0,qob=qd.obstruction||0;
+        var allZero=(qg+qa+qi+qc+qas+qpu+qdr+qor+qde+qto+qbp+qbh+qco+qob)===0;
+        var rowStyle=allZero?' style="color:#ccc"':'';
+        var sp=qa>0?Math.round(qg/qa*100)+'%':'—';
+        h+='<tr'+rowStyle+'><td style="font-weight:600">Q'+q+'</td>';
+        h+='<td>'+(qg||'—')+'</td><td>'+(qa||'—')+'</td><td>'+sp+'</td>';
+        h+='<td>'+(qi||'—')+'</td><td>'+(qc||'—')+'</td><td>'+(qas||'—')+'</td><td>'+(qpu||'—')+'</td>';
+        h+='<td>'+(qdr||'—')+'</td><td>'+(qor||'—')+'</td><td>'+(qde||'—')+'</td><td>'+(qto||'—')+'</td>';
+        h+='<td>'+(qbp||'—')+'</td><td>'+(qbh||'—')+'</td><td>'+(qco||'—')+'</td><td>'+(qob||'—')+'</td></tr>';
+        totals.goals+=qg;totals.attempts+=qa;totals.intercepts+=qi;totals.cpr+=qc;
+        totals.assists+=qas;totals.pickup+=qpu;totals.dReb+=qdr;totals.oReb+=qor;
+        totals.deflections+=qde;totals.turnovers+=qto;totals.badpass+=qbp;totals.badhands+=qbh;totals.contact+=qco;totals.obstruction+=qob;
+      }
+      var tsp=totals.attempts>0?Math.round(totals.goals/totals.attempts*100)+'%':'—';
+      h+='<tr style="font-weight:700;background:#f8f8f8;border-top:2px solid #eee"><td>Total</td>';
+      h+='<td class="hi">'+totals.goals+'</td><td>'+totals.attempts+'</td><td class="hi">'+tsp+'</td>';
+      h+='<td class="hi">'+totals.intercepts+'</td><td>'+totals.cpr+'</td><td>'+totals.assists+'</td><td>'+totals.pickup+'</td>';
+      h+='<td>'+totals.dReb+'</td><td>'+totals.oReb+'</td><td>'+totals.deflections+'</td><td class="lo">'+totals.turnovers+'</td>';
+      h+='<td class="lo">'+totals.badpass+'</td><td class="lo">'+totals.badhands+'</td><td class="lo">'+totals.contact+'</td><td class="lo">'+totals.obstruction+'</td></tr>';
+      h+='</tbody></table></div>';
     });
-    h+='</tbody></table></div>';
   }
   else if(tab==='attack'){
     h+='<div class="card ovfx"><table><thead><tr><th>Player</th><th>Pos</th><th>CP receives</th><th>Assists</th><th>Pick up</th><th>D.Reb</th></tr></thead><tbody>';
