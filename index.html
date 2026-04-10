@@ -295,6 +295,11 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
             <button class="btn btnsm" onclick="document.getElementById('editPlayerStats').style.display='none'">Cancel</button>
           </div>
         </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #ffe082">
+          <div style="font-size:11px;font-weight:700;color:#e65100;margin-bottom:4px">🗑️ Remove false stat summary</div>
+          <div style="font-size:11px;color:#555;margin-bottom:8px">The Hawkesbury 8 July fixture incorrectly shows a stat summary. Tap below to remove it, then sync.</div>
+          <button class="btn btnsm btnd" onclick="clearFalseFixtureSummary()">Remove Hawkesbury (8 Jul) summary</button>
+        </div>
       </div>
     </div><!-- end svSummary -->
   </div><!-- end margin-top wrapper -->
@@ -1309,7 +1314,7 @@ function openMatchSummary(fid){
   var totalThem=sc?(sc.them||[]).reduce(function(a,b){return a+b;},0):(f.them!==null?f.them:null);
   var resultColor=totalUs>totalThem?'#1D9E75':totalUs===totalThem?'#ef6c00':'#e53935';
   h+='<div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:12px;padding:12px;background:#f0faf6;border-radius:10px">';
-  h+='<div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase">Warbird</div><div style="font-size:40px;font-weight:900;color:'+(totalUs!==null&&totalThem!==null?resultColor:'#1a1a1a')+'">'+(totalUs!==null?totalUs:'—')+'</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase">IWNA 3</div><div style="font-size:40px;font-weight:900;color:'+(totalUs!==null&&totalThem!==null?resultColor:'#1a1a1a')+'">'+(totalUs!==null?totalUs:'—')+'</div></div>';
   h+='<div style="font-size:22px;font-weight:700;color:#888">–</div>';
   h+='<div style="text-align:center"><div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase">'+f.opp+'</div><div style="font-size:40px;font-weight:900;color:#555">'+(totalThem!==null?totalThem:'—')+'</div></div>';
   h+='</div>';
@@ -1478,6 +1483,17 @@ function saveEditPlayer(){
 /* Populate the editor dropdown whenever the summary tab is opened */
 var _origRenderSummary=renderSummary;
 renderSummary=function(){_origRenderSummary();populateEditPlayerSel();};
+
+/* Remove wrongly-attached saved game from Hawkesbury 8 July (fixture id 11) */
+function clearFalseFixtureSummary(){
+  var fixId=11; /* Hawkesbury City 2 on 2026-07-08 */
+  var f=D.fixtures.find(function(x){return x.id===fixId;});
+  var hadSG=D.savedGames&&D.savedGames.some(function(g){return g.fixId===fixId;});
+  if(f){f.statsRecorded=false;f.played=false;f.us=null;f.them=null;}
+  if(D.savedGames)D.savedGames=D.savedGames.filter(function(g){return g.fixId!==fixId;});
+  renderFix();
+  alert('Done. Fixture '+fixId+' (Hawkesbury 8 Jul) has been cleared.\n'+(hadSG?'The associated saved game snapshot was also removed.':'No saved game snapshot was attached.')+'\n\nNow tap the sync button to push to cloud.');
+}
 </script>
 
 <script>
