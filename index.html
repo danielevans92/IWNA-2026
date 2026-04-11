@@ -1411,8 +1411,6 @@ function openMatchSummary(fid){
   OM('mMatchSummary');
 }
 
-renderAll();
-
 /* ── MANUAL STAT EDITOR ── */
 var EDIT_STAT_KEYS=['goals','attempts','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'];
 var EDIT_STAT_LABELS={goals:'Goals',attempts:'Attempts',assists:'Assists',cpr:'CP Receives',pickup:'Pickup',dReb:'D.Reb',oReb:'O.Reb',intercepts:'Intercepts',deflections:'Deflections',turnovers:'Turnovers',badpass:'Bad Pass',badhands:'Bad Hands',contact:'Contact',obstruction:'Obstruction'};
@@ -1858,6 +1856,7 @@ function ntUndo(){if(!ntStrokes.length)return;ntStrokes.pop();ntRedraw();}
 function ntClear(){ntStrokes=[];ntRedraw();}
 /* Boot */
 window.addEventListener('DOMContentLoaded', function(){
+  renderAll();
   initSupabase();
 });
 </script>
