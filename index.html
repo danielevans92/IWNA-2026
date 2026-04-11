@@ -1627,10 +1627,10 @@ renderSummary=function(){_origRenderSummary();populateEditPlayerSel();};
 
 /* Remove wrongly-attached saved game from Hawkesbury 8 July (fixture id 11) */
 function wipeAllStats(){
-  if(!confirm('This will delete ALL season stats, saved games and clear all fixture results. Are you sure?'))return;
+  if(!confirm('This will delete ALL saved game stats and clear stat flags from fixtures. Fixture scores and results will be kept. Are you sure?'))return;
   D.sStats=[];
   D.savedGames=[];
-  D.fixtures.forEach(function(f){f.statsRecorded=false;f.played=false;f.us=null;f.them=null;});
+  D.fixtures.forEach(function(f){f.statsRecorded=false;});
   renderAll();
   renderSummary();
   alert('All stats wiped. Now tap the sync button to save to cloud.');
@@ -1677,40 +1677,20 @@ async function loadFromCloud(){
     syncStatus('syncing', 'Loading...');
     var res = await sb.from('team_data').select('*').eq('team_id', TEAM_ID).single();
     if(res.error && res.error.code !== 'PGRST116'){
-      // PGRST116 = no rows found (first time) — that's OK
       throw res.error;
     }
     if(res.data && res.data.payload){
       var cloud = JSON.parse(res.data.payload);
-      /* Merge cloud data into D — preserve structure */
       if(cloud.players  && cloud.players.length)  D.players    = cloud.players;
       if(cloud.injuries && cloud.injuries.length)  D.injuries   = cloud.injuries;
       if(cloud.fixtures && cloud.fixtures.length)  D.fixtures   = cloud.fixtures;
+      if(cloud.sStats   && cloud.sStats.length)    D.sStats     = cloud.sStats;
+      if(cloud.savedGames)                         D.savedGames = cloud.savedGames;
       if(cloud.preLineup)                          D.preLineup  = cloud.preLineup;
       if(cloud.nid)                                D.nid        = cloud.nid;
-      /* ── RESET: wipe corrupted stat data, preserve fixture scores ── */
-      D.sStats=[];
-      D.savedGames=[];
-      D.fixtures.forEach(function(f){f.statsRecorded=false;});
-      /* Save the clean state back after a short delay so sb is ready */
-      setTimeout(function(){saveToCloud();},500);
-      /* ── One-time fix: deduplicate savedGames and attach the real entry to fixture 1 ── */
-      if(D.savedGames&&D.savedGames.length>1){
-        /* Keep only the entry with the most player stats */
-        var best=D.savedGames.reduce(function(b,g){
-          return (g.playerStats?g.playerStats.length:0)>(b.playerStats?b.playerStats.length:0)?g:b;
-        },D.savedGames[0]);
-        best.fixId=1;
-        D.savedGames=[best];
-        D.fixtures.forEach(function(f){if(f.id!==1){f.statsRecorded=false;}});
-        var f1=D.fixtures.find(function(x){return x.id===1;});
-        if(f1)f1.statsRecorded=true;
-        saveToCloud();
-      }
       renderAll();
       syncStatus('ok', 'Synced ' + new Date().toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit'}));
     } else {
-      /* No cloud data yet — push local data up */
       syncStatus('ok', 'Ready (no cloud data yet)');
     }
   } catch(e){
