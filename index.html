@@ -533,8 +533,24 @@ function iLS(pos,q){
   if(!D.live.stats[pos])D.live.stats[pos]={};
   if(!D.live.stats[pos][q])D.live.stats[pos][q]={goals:0,attempts:0,missOwn:0,missTeammate:0,missOpp:0,offReb:0,assists:0,cpr:0,pickup:0,dReb:0,oReb:0,intercepts:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0,oppGoals:0,oppAttempts:0,oppMissOurReb:0,oppMissOppReb:0,oppTOConverted:0};
 }
-function gLS(pos,q){iLS(pos,q);return D.live.stats[pos][q];}
-function tLS(pos,k){var t=0;for(var q=1;q<=4;q++)t+=(D.live.stats[pos]&&D.live.stats[pos][q]?D.live.stats[pos][q][k]||0:0);return t;}
+/* Return the active stat key for a position (switches to sub key after a sub) */
+function apk(pos){return(D.live.activePosKey&&D.live.activePosKey[pos])||pos;}
+function gLS(pos,q){var k=apk(pos);iLS(k,q);return D.live.stats[k][q];}
+function tLS(pos,k){
+  /* Sum across all keys that belong to this pos (base + all sub slots) */
+  var total=0;
+  for(var q=1;q<=4;q++){
+    /* Base pos */
+    total+=(D.live.stats[pos]&&D.live.stats[pos][q]?D.live.stats[pos][q][k]||0:0);
+    /* Sub slots */
+    var si=1;
+    while(D.live.stats[pos+'_sub'+si]){
+      total+=(D.live.stats[pos+'_sub'+si][q]?D.live.stats[pos+'_sub'+si][q][k]||0:0);
+      si++;
+    }
+  }
+  return total;
+}
 function logEv(msg){D.live.events.unshift({q:D.live.qtr,msg:msg});renderEL();}
 
 /* Current player on court for a position (accounting for subs) */
@@ -583,6 +599,8 @@ function setSumTab(t,el){
 }
 function setLQ(q,el){
   D.live.qtr=q;
+  /* Reset active pos keys for the new quarter — subs from previous quarters don't carry over */
+  D.live.activePosKey={};
   /* Auto-apply pre-match lineup for this quarter if positions unassigned */
   var lineup=D.preLineup[q];
   if(lineup){
@@ -607,7 +625,7 @@ function setLQ(q,el){
 /* ── FIXTURE LINK ── */
 function openFixtureLive(fid){
   var f=D.fixtures.find(function(x){return x.id===fid;});if(!f)return;
-  D.live.fixId=fid;D.live.stats={};D.live.events=[];D.live.selPos=null;D.live.qtr=1;D.live.subHistory=[];D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.teamTO={1:0,2:0,3:0,4:0};
+  D.live.fixId=fid;D.live.stats={};D.live.events=[];D.live.selPos=null;D.live.qtr=1;D.live.subHistory=[];D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.teamTO={1:0,2:0,3:0,4:0};D.live.activePosKey={};
   SP('stats');
   SVTAB('live',document.querySelectorAll('#stTabs .tab')[0]);
   document.querySelectorAll('#liveQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});
@@ -671,12 +689,16 @@ function doSub(){
   var pOff=currentPlayer(pos);
   /* Record sub */
   D.live.subHistory.push({pos:pos,q:D.live.qtr,offName:pOff?pOff.first+' '+pOff.last:'?',onId:onId,onName:pOn?pOn.first+' '+pOn.last:'?'});
-  /* Create a new stat slot for the new player in this position+quarter
-     by appending a suffix so both players' stats are tracked separately */
-  var subKey=pos+'_sub'+D.live.subHistory.filter(function(s){return s.pos===pos&&s.q===D.live.qtr;}).length;
-  /* We store sub-player stats under a virtual key */
+  /* Work out the new stat key for this sub slot (global count across all quarters for this pos) */
+  var globalSubCount=D.live.subHistory.filter(function(s){return s.pos===pos;}).length;
+  var subKey=pos+'_sub'+globalSubCount;
+  /* Initialise the stat slot for the incoming player */
+  iLS(subKey, D.live.qtr);
+  /* Store the active key so stat recording uses it */
+  if(!D.live.activePosKey)D.live.activePosKey={};
+  D.live.activePosKey[pos]=subKey;
   D.live.assign[pos]=onId;
-  logEv('SUB: '+( pOff?pOff.first:pos)+' → '+( pOn?pOn.first:'?')+' at '+pos);
+  logEv('SUB: '+(pOff?pOff.first:pos)+' → '+(pOn?pOn.first:'?')+' at '+pos);
   CM('mSub');
   drawCourt();
   if(D.live.selPos===pos)renderStatPanel(pos);
@@ -740,6 +762,14 @@ function addFix(){
   D.fixtures.push({id:D.nid++,date:d,opp:o,venue:document.getElementById('fxVn').value,loc:document.getElementById('fxLc').value,us:played?parseInt(us):null,them:played?parseInt(th):null,played:played});
   D.fixtures.sort(function(a,b){return a.date.localeCompare(b.date);});
   CM('mFix');['fxDt','fxOp','fxLc','fxUs','fxTh'].forEach(function(i){document.getElementById(i).value='';});renderAll();
+}
+function deleteFix(id){
+  var f=D.fixtures.find(function(x){return x.id===id;});
+  if(!f)return;
+  if(!confirm('Delete fixture vs '+f.opp+' on '+fd(f.date)+'?'+(D.savedGames&&D.savedGames.some(function(g){return g.fixId===id;})?'\n\nThis will also delete the saved match stats.':'')))return;
+  D.fixtures=D.fixtures.filter(function(x){return x.id!==id;});
+  D.savedGames=D.savedGames.filter(function(g){return g.fixId!==id;});
+  renderAll();
 }
 function importFix(){
   var lines=document.getElementById('impTxt').value.trim().split('\n').filter(function(l){return l.trim();});
@@ -929,7 +959,7 @@ function logTeamTO(delta){
 }
 
 function logShot(pos,type){
-  var q=D.live.qtr;iLS(pos,q);var qs=D.live.stats[pos][q];
+  var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   var p=currentPlayer(pos);var name=p?p.first:pos;
   if(type==='goal'){qs.goals++;qs.attempts++;logEv(name+' — goal scored');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+1;updateScoreDisplay();}}
   else if(type==='missOwn'){qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' — missed, own rebound');}
@@ -939,14 +969,14 @@ function logShot(pos,type){
   drawCourt();renderStatPanel(pos);
 }
 function logOppShot(pos,type){
-  var q=D.live.qtr;iLS(pos,q);var qs=D.live.stats[pos][q];
+  var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   if(type==='oppGoal'){qs.oppGoals++;qs.oppAttempts++;logEv('OPP goal ('+pos+')');if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+1;updateScoreDisplay();}
   else if(type==='oppMissOurReb'){qs.oppMissOurReb++;qs.oppAttempts++;logEv('OPP miss our reb ('+pos+')');}
   else if(type==='oppMissOppReb'){qs.oppMissOppReb++;qs.oppAttempts++;logEv('OPP miss their reb ('+pos+')');}
   drawCourt();renderStatPanel(pos);
 }
 function undoLastShot(pos){
-  var q=D.live.qtr;iLS(pos,q);var qs=D.live.stats[pos][q];
+  var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   var keys=['goal scored','missed, own rebound','missed, opp rebound','offensive rebound'];
   var idx=D.live.events.findIndex(function(e){return e.q===q&&keys.some(function(k){return e.msg.indexOf(k)>-1;});});
   if(idx<0){alert('No shot to undo this quarter.');return;}
@@ -958,7 +988,7 @@ function undoLastShot(pos){
   D.live.events.splice(idx,1);renderEL();drawCourt();renderStatPanel(pos);
 }
 function tapSt(pos,q,key,delta){
-  iLS(pos,q);var qs=D.live.stats[pos][q];qs[key]=Math.max(0,(qs[key]||0)+delta);
+  var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];qs[key]=Math.max(0,(qs[key]||0)+delta);
   var p=currentPlayer(pos);if(delta>0)logEv((p?p.first:pos)+' — '+key);
   renderStatPanel(pos);drawCourt();
 }
@@ -1253,8 +1283,9 @@ function renderOv(){
   document.getElementById('rw').textContent=pl.filter(function(f){return f.us>f.them;}).length;
   document.getElementById('rl').textContent=pl.filter(function(f){return f.us<f.them;}).length;
   document.getElementById('rd').textContent=pl.filter(function(f){return f.us===f.them;}).length;
-  var nxt=D.fixtures.find(function(f){return!f.played;});
-  document.getElementById('nxt').innerHTML=nxt?'<div style="font-weight:700;font-size:13px;margin-bottom:3px">'+nxt.opp+'</div><div style="font-size:12px">'+fd(nxt.date)+'&nbsp;<span class="bdg '+(nxt.venue==='Home'?'bg':'bb')+'">'+nxt.venue+'</span></div>':'<span style="font-size:12px;color:#aaa">No fixtures added yet</span>';
+  var today=new Date();today.setHours(0,0,0,0);
+  var nxt=D.fixtures.filter(function(f){return new Date(f.date)>=today;}).sort(function(a,b){return a.date.localeCompare(b.date);})[0]||null;
+  document.getElementById('nxt').innerHTML=nxt?'<div style="font-weight:700;font-size:13px;margin-bottom:3px">'+nxt.opp+'</div><div style="font-size:12px">'+fd(nxt.date)+'&nbsp;<span class="bdg '+(nxt.venue==='Home'?'bg':'bb')+'">'+nxt.venue+'</span></div>':'<span style="font-size:12px;color:#aaa">No upcoming fixtures</span>';
   var ai=D.injuries.filter(function(i){return i.active;});
   document.getElementById('ovInj').innerHTML=ai.length?ai.map(function(i){var p=D.players.find(function(x){return x.id===i.pid;});return'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f5f5"><span style="font-size:12px">'+(p?p.first+' '+p.last:'?')+' — '+i.desc+'</span><span class="bdg '+(i.sev==='severe'?'br':i.sev==='moderate'?'ba':'bb')+'">'+i.sev+'</span></div>';}).join(''):'<span style="font-size:12px;color:#aaa">None</span>';
 }
@@ -1285,7 +1316,7 @@ function renderFix(){
       '<td onclick="openFixtureLive('+f.id+')"><span class="bdg '+(f.venue==='Home'?'bg':'bb')+'">'+f.venue+'</span></td>'+
       '<td onclick="openFixtureLive('+f.id+')">'+(f.played?f.us+' – '+f.them:'—')+'</td>'+
       '<td onclick="openFixtureLive('+f.id+')">'+(r?'<span style="font-weight:700;color:'+(r==='W'?'#1D9E75':r==='L'?'#e53935':'#ef6c00')+'">'+r+'</span>':'<span class="bdg bgr">Upcoming</span>')+'</td>'+
-      '<td>'+(hasSG?'<button class="btn btnsm" style="background:#e3f2fd;color:#1565c0;border-color:#bbdefb;font-size:10px" onclick="event.stopPropagation();openMatchSummary('+f.id+')">📊 Summary</button>':f.statsRecorded?'<span class="bdg bg" onclick="openFixtureLive('+f.id+')">Stats ✓</span>':'<span style="font-size:10px;color:#1D9E75;font-weight:700" onclick="openFixtureLive('+f.id+')">Track →</span>')+'</td></tr>';
+      '<td style="display:flex;gap:4px;align-items:center">'+(hasSG?'<button class="btn btnsm" style="background:#e3f2fd;color:#1565c0;border-color:#bbdefb;font-size:10px" onclick="event.stopPropagation();openMatchSummary('+f.id+')">📊 Summary</button>':f.statsRecorded?'<span class="bdg bg" onclick="openFixtureLive('+f.id+')">Stats ✓</span>':'<span style="font-size:10px;color:#1D9E75;font-weight:700" onclick="openFixtureLive('+f.id+')">Track →</span>')+'<button class="btn btnsm btnd" style="font-size:10px;padding:3px 7px" onclick="event.stopPropagation();deleteFix('+f.id+')">✕</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:16px">No fixtures added yet</td></tr>';
 }
 
@@ -1516,13 +1547,16 @@ renderSummary=function(){_origRenderSummary();populateEditPlayerSel();};
 
 /* Remove wrongly-attached saved game from Hawkesbury 8 July (fixture id 11) */
 function wipeAllStats(){
-  if(!confirm('This will delete ALL saved game stats and clear stat flags from fixtures. Fixture scores and results will be kept. Are you sure?'))return;
+  var confirm1=confirm('WARNING: This will permanently delete ALL saved game stats.\n\nFixture scores and results will be kept.\n\nAre you sure you want to continue?');
+  if(!confirm1)return;
+  var word=prompt('Type WIPE to confirm deletion of all stats:');
+  if(word!=='WIPE'){alert('Cancelled — you must type WIPE exactly.');return;}
   D.sStats=[];
   D.savedGames=[];
   D.fixtures.forEach(function(f){f.statsRecorded=false;});
   renderAll();
   renderSummary();
-  alert('All stats wiped. Now tap the sync button to save to cloud.');
+  alert('All stats wiped. Tap ↻ Sync now to save to cloud.');
 }
 </script>
 
@@ -1619,7 +1653,7 @@ async function saveToCloud(){
   }
 }
 
-/* Auto-save triggers — hook into key actions */
+/* Auto-save triggers */
 var _origSaveGame = saveGame;
 saveGame = async function(){
   _origSaveGame();
@@ -1632,21 +1666,9 @@ addPlayer = function(){
   saveToCloud();
 };
 
-var _origLogInj = logInj;
-logInj = function(){
-  _origLogInj();
-  saveToCloud();
-};
-
 var _origAddFix = addFix;
 addFix = function(){
   _origAddFix();
-  saveToCloud();
-};
-
-var _origSetPA = setPA;
-setPA = function(id, a){
-  _origSetPA(id, a);
   saveToCloud();
 };
 
