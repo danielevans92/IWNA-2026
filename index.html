@@ -1151,6 +1151,38 @@ function renderMatchSummary(){
   function pName(pid){var p=D.players.find(function(x){return x.id==pid;});return p?p.first+' '+p.last:'Player '+pid;}
   function v(n){return n||0;}
   function pct(g,a){return a>0?Math.round(g/a*100)+'%':'—';}
+  function np(d){
+    /* Positive */
+    var pts=0;
+    pts+=v(d.goals)*2;
+    pts+=v(d.assists)*1.5;
+    pts+=v(d.missOwn)*1;        /* own rebound on missed attempt */
+    pts+=v(d.missTeammate)*3;   /* teammate's rebound */
+    pts+=v(d.pickup)*4;
+    pts+=v(d.cpr)*1;
+    pts+=v(d.dReb)*6;
+    pts+=v(d.intercepts)*10;
+    pts+=v(d.deflections)*4;
+    /* Negative */
+    pts+=v(d.badpass)*-8;
+    pts+=v(d.badhands)*-8;
+    pts+=v(d.missOpp)*-8;       /* missed goal, opp rebound = turnover */
+    var rounded=Math.round(pts*10)/10;
+    var col=rounded>0?'#1D9E75':rounded<0?'#e53935':'#555';
+    return '<span style="font-weight:700;color:'+col+'">'+(rounded>0?'+':'')+rounded+'</span>';
+  }
+  function npVal(d){
+    var pts=0;
+    pts+=v(d.goals)*2;pts+=v(d.assists)*1.5;pts+=v(d.missOwn)*1;
+    pts+=v(d.missTeammate)*3;pts+=v(d.pickup)*4;pts+=v(d.cpr)*1;
+    pts+=v(d.dReb)*6;pts+=v(d.intercepts)*10;pts+=v(d.deflections)*4;
+    pts+=v(d.badpass)*-8;pts+=v(d.badhands)*-8;pts+=v(d.missOpp)*-8;
+    return Math.round(pts*10)/10;
+  }
+  function npCell(val){
+    var col=val>0?'#1D9E75':val<0?'#e53935':'#555';
+    return '<span style="font-weight:700;color:'+col+'">'+(val>0?'+':'')+val+'</span>';
+  }
 
   var score=sg.score||{us:[0,0,0,0],them:[0,0,0,0]};
   var totUs=score.us.reduce(function(a,b){return a+b;},0);
@@ -1176,11 +1208,13 @@ function renderMatchSummary(){
   }
   h+='</div></div>';
 
-  /* View toggle tabs */
+  /* View toggle */
   h+='<div style="display:flex;gap:0;margin-bottom:10px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden">';
   h+='<button id="sumTabQtr" onclick="sumSetTab(\'qtr\')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#1565c0;color:#fff">📋 By Quarter</button>';
   h+='<button id="sumTabFull" onclick="sumSetTab(\'full\')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#f5f5f5;color:#555">📊 Full Match</button>';
   h+='</div>';
+
+  var TH='<th>Player</th><th>Goals</th><th>Att</th><th>Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th><th style="background:#e8f5e9;color:#1D9E75">NP</th>';
 
   /* ── QUARTER VIEW ── */
   h+='<div id="sumViewQtr">';
@@ -1204,9 +1238,7 @@ function renderMatchSummary(){
       });
     }
     if(qPlayers.length){
-      h+='<div class="ovfx"><table style="min-width:580px"><thead><tr>';
-      h+='<th>Player</th><th>Goals</th><th>Att</th><th>Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th>';
-      h+='</tr></thead><tbody>';
+      h+='<div class="ovfx"><table style="min-width:620px"><thead><tr>'+TH+'</tr></thead><tbody>';
       qPlayers.forEach(function(x){
         var d=x.qd;
         h+='<tr><td style="font-weight:600;white-space:nowrap">'+pName(x.pid)+'</td>';
@@ -1214,7 +1246,8 @@ function renderMatchSummary(){
         h+='<td>'+v(d.intercepts)+'</td><td>'+v(d.cpr)+'</td><td>'+v(d.assists)+'</td><td>'+v(d.pickup)+'</td>';
         h+='<td>'+v(d.dReb)+'</td><td>'+v(d.oReb)+'</td><td>'+v(d.deflections)+'</td>';
         h+='<td class="lo">'+v(d.turnovers)+'</td><td class="lo">'+v(d.badpass)+'</td><td class="lo">'+v(d.badhands)+'</td>';
-        h+='<td class="lo">'+v(d.contact)+'</td><td class="lo">'+v(d.obstruction)+'</td></tr>';
+        h+='<td class="lo">'+v(d.contact)+'</td><td class="lo">'+v(d.obstruction)+'</td>';
+        h+='<td style="background:#f9fff9">'+np(d)+'</td></tr>';
       });
       h+='</tbody></table></div>';
     } else {
@@ -1230,25 +1263,27 @@ function renderMatchSummary(){
   h+='<div style="font-size:12px;font-weight:700;color:#333;margin-bottom:8px">Full match — all players</div>';
   var allPids=sg.playerStats?Object.keys(sg.playerStats):[];
   if(allPids.length){
-    /* Build totals per player */
     var playerTotals=[];
     var teamTot={};SK.forEach(function(k){teamTot[k]=0;});
+    var teamNP=0;
     allPids.forEach(function(pid){
       var tot={};SK.forEach(function(k){tot[k]=0;});
+      /* Also accumulate rebound sub-types for NP calculation */
+      tot.missOwn=0;tot.missTeammate=0;tot.missOpp=0;
       for(var qq=1;qq<=4;qq++){
         var qd=sg.playerStats[pid][qq]||{};
         SK.forEach(function(k){tot[k]+=qd[k]||0;});
+        tot.missOwn+=v(qd.missOwn);tot.missTeammate+=v(qd.missTeammate);tot.missOpp+=v(qd.missOpp);
       }
       var hasAny=SK.some(function(k){return tot[k]>0;});
       if(!hasAny)return;
       SK.forEach(function(k){teamTot[k]+=tot[k];});
-      playerTotals.push({pid:parseInt(pid),tot:tot});
+      var pnp=npVal(tot);
+      teamNP=Math.round((teamNP+pnp)*10)/10;
+      playerTotals.push({pid:parseInt(pid),tot:tot,pnp:pnp});
     });
-    /* Sort by goals desc */
-    playerTotals.sort(function(a,b){return b.tot.goals-a.tot.goals;});
-    h+='<div class="ovfx"><table style="min-width:580px"><thead><tr>';
-    h+='<th>Player</th><th>Goals</th><th>Att</th><th>Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th>';
-    h+='</tr></thead><tbody>';
+    playerTotals.sort(function(a,b){return b.pnp-a.pnp;});
+    h+='<div class="ovfx"><table style="min-width:620px"><thead><tr>'+TH+'</tr></thead><tbody>';
     playerTotals.forEach(function(x){
       var t=x.tot;
       h+='<tr><td style="font-weight:600;white-space:nowrap">'+pName(x.pid)+'</td>';
@@ -1256,14 +1291,16 @@ function renderMatchSummary(){
       h+='<td>'+t.intercepts+'</td><td>'+t.cpr+'</td><td>'+t.assists+'</td><td>'+t.pickup+'</td>';
       h+='<td>'+t.dReb+'</td><td>'+t.oReb+'</td><td>'+t.deflections+'</td>';
       h+='<td class="lo">'+t.turnovers+'</td><td class="lo">'+t.badpass+'</td><td class="lo">'+t.badhands+'</td>';
-      h+='<td class="lo">'+t.contact+'</td><td class="lo">'+t.obstruction+'</td></tr>';
+      h+='<td class="lo">'+t.contact+'</td><td class="lo">'+t.obstruction+'</td>';
+      h+='<td style="background:#f9fff9">'+npCell(x.pnp)+'</td></tr>';
     });
     h+='<tr style="font-weight:700;background:#f0f8ff;border-top:2px solid #bbdefb"><td>TEAM TOTAL</td>';
     h+='<td class="hi">'+teamTot.goals+'</td><td>'+teamTot.attempts+'</td><td class="hi">'+pct(teamTot.goals,teamTot.attempts)+'</td>';
     h+='<td>'+teamTot.intercepts+'</td><td>'+teamTot.cpr+'</td><td>'+teamTot.assists+'</td><td>'+teamTot.pickup+'</td>';
     h+='<td>'+teamTot.dReb+'</td><td>'+teamTot.oReb+'</td><td>'+teamTot.deflections+'</td>';
     h+='<td class="lo">'+teamTot.turnovers+'</td><td class="lo">'+teamTot.badpass+'</td><td class="lo">'+teamTot.badhands+'</td>';
-    h+='<td class="lo">'+teamTot.contact+'</td><td class="lo">'+teamTot.obstruction+'</td></tr>';
+    h+='<td class="lo">'+teamTot.contact+'</td><td class="lo">'+teamTot.obstruction+'</td>';
+    h+='<td style="background:#f9fff9">'+npCell(teamNP)+'</td></tr>';
     h+='</tbody></table></div>';
   } else {
     h+='<div style="font-size:12px;color:#aaa">No player stats recorded.</div>';
