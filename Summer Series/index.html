@@ -110,7 +110,7 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
 <div class="banner">
   <div style="flex:1">
     <div class="banner-title">Inner West Netball Association</div>
-    <div class="banner-sub">2026 Metro League Division 5</div>
+    <div class="banner-sub">2026 Summer Series Division 4</div>
     <div style="display:flex;align-items:center;margin-top:4px">
       <span class="sync-dot" id="syncDot"></span>
       <span class="sync-label" id="syncLabel">Not connected</span>
@@ -828,7 +828,7 @@ function drawCourt(){
   var cW=W-pad*2,cH=H-pad*2;
   var third=cW/3;
   var cx=pad+cW/2,cy=H/2;
-  var cr=Math.round(cH*0.48);
+  var cr=Math.round(cH*0.30);
   var h='';
   h+='<defs><clipPath id="cc"><rect x="'+pad+'" y="'+pad+'" width="'+cW+'" height="'+cH+'"/></clipPath></defs>';
   h+='<rect width="'+W+'" height="'+H+'" fill="#e8ecf0" rx="4"/>';
@@ -840,7 +840,9 @@ function drawCourt(){
   h+='<line x1="'+t2x+'" y1="'+pad+'" x2="'+t2x+'" y2="'+(pad+cH)+'" stroke="#1e3a8a" stroke-width="2"/>';
   h+='<rect x="'+pad+'" y="'+pad+'" width="'+cW+'" height="'+cH+'" fill="none" stroke="#1e3a8a" stroke-width="2.5"/>';
   h+='<circle cx="'+cx+'" cy="'+cy+'" r="30" fill="none" stroke="#1e3a8a" stroke-width="2"/>';
-  h+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="#1e3a8a"/>';
+  /* centre dot removed */
+  h+='<circle cx="'+pad+'" cy="'+cy+'" r="4" fill="#FFD700"/>'; /* attack goal post */
+  h+='<circle cx="'+(pad+cW)+'" cy="'+cy+'" r="4" fill="#FFD700"/>'; /* defence goal post */
   h+='<text x="'+(pad+third/2)+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">ATTACK</text>';
   h+='<text x="'+cx+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">CENTRE</text>';
   h+='<text x="'+(pad+third*2+third/2)+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">DEFENCE</text>';
@@ -962,6 +964,10 @@ function logShot(pos,type){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   var p=currentPlayer(pos);var name=p?p.first:pos;
   if(type==='goal'){qs.goals++;qs.attempts++;logEv(name+' — goal scored');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+1;updateScoreDisplay();}}
+  else if(type==='superGoal'){qs.superGoals++;qs.superAttempts++;qs.goals+=2;logEv(name+' — ⭐ SUPER GOAL (2pts)');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+2;updateScoreDisplay();}}
+  else if(type==='superMissOwn'){qs.superMissOwn++;qs.superAttempts++;qs.dReb++;logEv(name+' — super miss, own reb');}
+  else if(type==='superMissTeammate'){qs.superMissTeammate++;qs.superAttempts++;qs.oReb++;logEv(name+' — super miss, teammate reb');}
+  else if(type==='superMissOpp'){qs.superMissOpp++;qs.superAttempts++;qs.turnovers++;logEv(name+' — super miss, opp reb (TO)');}
   else if(type==='missOwn'){qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' — missed, own rebound');}
   else if(type==='missTeammate'){qs.missTeammate++;qs.attempts++;qs.oReb++;logEv(name+' — missed, teammate rebound');}
   else if(type==='missOpp'){qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' — missed, opp rebound (TO)');}
@@ -1753,7 +1759,7 @@ function dcInitCourt(){
   var cvs=document.getElementById('dcCanvas');
   if(!svg||!cvs)return;
   // Draw the same court as stats page but without player markers
-  var W=560,H=380,pad=20,cW=W-pad*2,cH=H-pad*2,third=cW/3,cx=pad+cW/2,cy=H/2,cr=Math.round(cH*0.48);
+  var W=560,H=380,pad=20,cW=W-pad*2,cH=H-pad*2,third=cW/3,cx=pad+cW/2,cy=H/2,cr=Math.round(cH*0.30);
   var h='';
   h+='<defs><clipPath id="dcc"><rect x="'+pad+'" y="'+pad+'" width="'+cW+'" height="'+cH+'"/></clipPath></defs>';
   h+='<rect width="'+W+'" height="'+H+'" fill="#e8ecf0" rx="4"/>';
@@ -1765,7 +1771,9 @@ function dcInitCourt(){
   h+='<line x1="'+t2x+'" y1="'+pad+'" x2="'+t2x+'" y2="'+(pad+cH)+'" stroke="#1e3a8a" stroke-width="2"/>';
   h+='<rect x="'+pad+'" y="'+pad+'" width="'+cW+'" height="'+cH+'" fill="none" stroke="#1e3a8a" stroke-width="2.5"/>';
   h+='<circle cx="'+cx+'" cy="'+cy+'" r="30" fill="none" stroke="#1e3a8a" stroke-width="2"/>';
-  h+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="#1e3a8a"/>';
+  /* centre dot removed */
+  h+='<circle cx="'+pad+'" cy="'+cy+'" r="4" fill="#FFD700"/>'; /* attack goal post */
+  h+='<circle cx="'+(pad+cW)+'" cy="'+cy+'" r="4" fill="#FFD700"/>'; /* defence goal post */
   h+='<text x="'+(pad+third/2)+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">ATTACK</text>';
   h+='<text x="'+cx+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">CENTRE</text>';
   h+='<text x="'+(pad+third*2+third/2)+'" y="'+(pad+16)+'" fill="#1e3a8a" font-size="10" font-family="sans-serif" font-weight="700" text-anchor="middle">DEFENCE</text>';
