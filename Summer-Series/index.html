@@ -492,24 +492,15 @@ var D={
   players:[],
   injuries:[],
   fixtures:[
-    {id:1,date:"2026-04-20",opp:"Blacktown City 2",venue:"Home",loc:"Netball Central / Court 01",us:null,them:null,played:false,statsRecorded:false},
-    {id:2,date:"2026-04-27",opp:"Hawkesbury City 2",venue:"Away",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:3,date:"2026-05-04",opp:"Camden & District 2",venue:"Home",loc:"Netball Central / Show Court",us:null,them:null,played:false,statsRecorded:false},
-    {id:4,date:"2026-05-11",opp:"Central Coast 3",venue:"Away",loc:"Netball Central / Court 01",us:null,them:null,played:false,statsRecorded:false},
-    {id:5,date:"2026-05-18",opp:"Liverpool City 3",venue:"Home",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:6,date:"2026-05-25",opp:"St. George District 2",venue:"Away",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:7,date:"2026-06-01",opp:"Illawarra District 3",venue:"Away",loc:"Netball Central / Show Court",us:null,them:null,played:false,statsRecorded:false},
-    {id:8,date:"2026-06-15",opp:"Bankstown City 2",venue:"Home",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:9,date:"2026-06-22",opp:"Ku-ring-gai 3",venue:"Away",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:10,date:"2026-06-29",opp:"Blacktown City 2",venue:"Away",loc:"Netball Central / Court 01",us:null,them:null,played:false,statsRecorded:false},
-    {id:11,date:"2026-07-08",opp:"Hawkesbury City 2",venue:"Home",loc:"Netball Central / Court 01",us:null,them:null,played:false,statsRecorded:false},
-    {id:12,date:"2026-07-13",opp:"Camden & District 2",venue:"Away",loc:"Netball Central / Show Court",us:null,them:null,played:false,statsRecorded:false},
-    {id:13,date:"2026-07-20",opp:"Central Coast 3",venue:"Home",loc:"Netball Central / Court 01",us:null,them:null,played:false,statsRecorded:false},
-    {id:14,date:"2026-07-27",opp:"Liverpool City 3",venue:"Away",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:15,date:"2026-08-03",opp:"St. George District 2",venue:"Home",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:16,date:"2026-08-10",opp:"Illawarra District 3",venue:"Home",loc:"Netball Central / Show Court",us:null,them:null,played:false,statsRecorded:false},
-    {id:17,date:"2026-08-17",opp:"Bankstown City 2",venue:"Away",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false},
-    {id:18,date:"2026-08-24",opp:"Ku-ring-gai 3",venue:"Home",loc:"Netball Central / Court 02",us:null,them:null,played:false,statsRecorded:false}
+    {id:1,date:"2026-10-06",opp:"Liverpool City 2",venue:"Home",loc:"Netball Central / Court 03 (19:40)",us:null,them:null,played:false,statsRecorded:false},
+    {id:2,date:"2026-10-13",opp:"Randwick 3",venue:"Away",loc:"Netball Central / Court 03 (18:30)",us:null,them:null,played:false,statsRecorded:false},
+    {id:3,date:"2026-10-20",opp:"Hills District 3",venue:"Home",loc:"Netball Central / Court 03 (20:50)",us:null,them:null,played:false,statsRecorded:false},
+    {id:4,date:"2026-10-27",opp:"St. George District 2",venue:"Away",loc:"Netball Central / Court 01 (19:40)",us:null,them:null,played:false,statsRecorded:false},
+    {id:5,date:"2026-11-03",opp:"Eastwood Ryde 3",venue:"Away",loc:"Netball Central / Show Court (18:30)",us:null,them:null,played:false,statsRecorded:false},
+    {id:6,date:"2026-11-10",opp:"Camden & District 2",venue:"Home",loc:"Netball Central / Show Court (20:50)",us:null,them:null,played:false,statsRecorded:false},
+    {id:7,date:"2026-11-17",opp:"Manly Warringah 2",venue:"Away",loc:"Netball Central / Court 02 (19:40)",us:null,them:null,played:false,statsRecorded:false},
+    {id:8,date:"2026-11-24",opp:"Sutherland Shire 3",venue:"Home",loc:"Netball Central / Show Court (18:30)",us:null,them:null,played:false,statsRecorded:false},
+    {id:9,date:"2026-12-01",opp:"Baulkham Hills 3",venue:"Away",loc:"Netball Central / Court 03 (20:50)",us:null,them:null,played:false,statsRecorded:false}
   ],
   sStats:[],
   /* preLineup[q][pos] = playerId — pre-match quarter assignments */
@@ -1363,7 +1354,7 @@ function renderOv(){
 }
 function renderSq(){
   var fl=D.afilt==='all'?D.players:D.players.filter(function(p){return p.avail===D.afilt;});
-  document.getElementById('sqGrid').innerHTML=fl.length?fl.map(function(p){return'<div class="plc '+p.avail+'" onclick="openPD('+p.id+')"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><span class="pdot" style="background:'+PC[p.pos]+';width:22px;height:22px;font-size:8px">'+p.pos+'</span><div style="font-size:12px;font-weight:600">'+p.first+' '+p.last+'</div></div><div style="font-size:10px;color:#888">'+({available:'Available',unavailable:'Unavailable',injured:'Injured'}[p.avail])+'</div></div>';}).join(''):'<div style="color:#aaa;font-size:13px;padding:16px 0">No players added yet</div>';
+  document.getElementById('sqGrid').innerHTML=fl.length?fl.map(function(p){var posDots=(p.positions&&p.positions.length?p.positions:[p.pos]).map(function(pos){return'<span class="pdot" style="background:'+PC[pos]+';width:22px;height:22px;font-size:8px;margin-right:2px">'+pos+'</span>';}).join('');return'<div class="plc '+p.avail+'" onclick="openPD('+p.id+')"><div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;flex-wrap:wrap">'+posDots+'<div style="font-size:12px;font-weight:600">'+p.first+' '+p.last+'</div></div><div style="font-size:10px;color:#888">'+({available:'Available',unavailable:'Unavailable',injured:'Injured'}[p.avail])+'</div></div>';}).join(''):'<div style="color:#aaa;font-size:13px;padding:16px 0">No players added yet</div>';
   var pc={};D.players.filter(function(p){return p.avail==='available';}).forEach(function(p){var positions=p.positions||[p.pos];positions.forEach(function(pos){pc[pos]=(pc[pos]||0)+1;});});
   document.getElementById('posSum').innerHTML=Object.keys(pc).length?Object.keys(pc).map(function(pos){return'<span class="bdg" style="background:'+PC[pos]+'22;color:'+PC[pos]+';border:1px solid '+PC[pos]+'55">'+pos+': '+pc[pos]+'</span>';}).join(''):'<span style="font-size:12px;color:#aaa">None available</span>';
 }
