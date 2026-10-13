@@ -123,6 +123,7 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
   <button onclick="SP('sq')">Squad</button>
   <button onclick="SP('inj')">Injuries</button>
   <button onclick="SP('fix')">Fixtures</button>
+  <button onclick="SP('lineup')">📋 Lineup</button>
   <button onclick="SP('stats')">Stats</button>
   <button onclick="SP('court')">Court</button>
   <button onclick="SP('notes')">Notes</button>
@@ -324,6 +325,50 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
       <canvas id="dcCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:8px;touch-action:none;"></canvas>
     </div>
     <div style="font-size:10px;color:#aaa;margin-top:6px;text-align:center">Draw with finger or Apple Pencil</div>
+  </div>
+</div>
+
+<!-- LINEUP PAGE -->
+<div class="page" id="page-lineup">
+  <div class="card" style="padding:14px">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#1e3a8a">📋 Match lineup planner</div>
+    <p style="font-size:12px;color:#888;margin:0 0 12px">Plan your starting positions for each quarter. These auto-load when you switch quarters during live tracking.</p>
+
+    <!-- Fixture selector -->
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:#555;display:block;margin-bottom:4px">Fixture</label>
+      <select id="lineupFixSel" onchange="lineupSelectFix(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;font-size:13px">
+        <option value="">— Select a fixture —</option>
+      </select>
+    </div>
+
+    <!-- Quarter tabs -->
+    <div class="tabs" id="lineupPageQTabs" style="margin-bottom:12px">
+      <div class="tab active" onclick="setLineupQ(1,this,'page')">Q1</div>
+      <div class="tab" onclick="setLineupQ(2,this,'page')">Q2</div>
+      <div class="tab" onclick="setLineupQ(3,this,'page')">Q3</div>
+      <div class="tab" onclick="setLineupQ(4,this,'page')">Q4</div>
+    </div>
+
+    <div id="lineupPageQLabel" style="font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:10px">Quarter 1 lineup</div>
+
+    <!-- Position rows -->
+    <div id="lineupAssignListPage" style="margin-bottom:14px"></div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btno" onclick="copyLineupToNextQ()" style="flex:1">Copy to next Q ›</button>
+      <button class="btn btnp" onclick="applyLineupToCurrentQ(true)" style="flex:1">Apply to Q<span id="lineupApplyQNumPage">1</span> now</button>
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn" onclick="copyLineupAllQ()" style="width:100%;background:#e8f5e9;border-color:#81c784;color:#1b5e20;font-size:12px">Copy Q1 to all quarters</button>
+    </div>
+  </div>
+
+  <!-- Quarter-by-quarter overview card -->
+  <div class="card" style="padding:14px;margin-top:10px">
+    <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#1e3a8a">Quarter overview</div>
+    <div id="lineupOverview" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
   </div>
 </div>
 
@@ -558,9 +603,10 @@ function SP(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
-  var pages=['ov','sq','inj','fix','stats','court','notes'];
+  var pages=['ov','sq','inj','fix','lineup','stats','court','notes'];
   document.querySelectorAll('.nav button')[pages.indexOf(id)].classList.add('active');
   if(id==='stats'){if(D.stab==='live'){updateLiveHeader();drawCourt();}else renderSummary();}
+  else if(id==='lineup'){renderLineupFixSel();renderLineupAssign();}
   else if(id==='court'){setTimeout(dcInitCourt,80);}
   else if(id==='notes'){setTimeout(ntInitCanvas,80);}
   else renderAll();
@@ -569,7 +615,7 @@ function OM(id){
   if(id==='mInj'){document.getElementById('injPl').innerHTML=D.players.map(function(p){return'<option value="'+p.id+'">'+p.first+' '+p.last+'</option>';}).join('');document.getElementById('injDt').value=new Date().toISOString().split('T')[0];}
   if(id==='mAssign')renderAssign();
   if(id==='mSub')renderSubModal();
-  if(id==='mLineup'){lineupEditQ=1;document.querySelectorAll('#lineupQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});document.getElementById('lineupQLabel').textContent='Quarter 1 lineup';document.getElementById('lineupApplyQNum').textContent='1';renderLineupAssign();}
+  if(id==='mLineup'){lineupEditQ=1;document.querySelectorAll('#lineupQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});document.querySelectorAll('#lineupPageQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});if(document.getElementById('lineupQLabel'))document.getElementById('lineupQLabel').textContent='Quarter 1 lineup';if(document.getElementById('lineupPageQLabel'))document.getElementById('lineupPageQLabel').textContent='Quarter 1 lineup';if(document.getElementById('lineupApplyQNum'))document.getElementById('lineupApplyQNum').textContent='1';if(document.getElementById('lineupApplyQNumPage'))document.getElementById('lineupApplyQNumPage').textContent='1';renderLineupAssign();}
   document.getElementById(id).style.display='flex';
 }
 function CM(id){document.getElementById(id).style.display='none';}
@@ -1477,17 +1523,24 @@ function renderFix(){
 
 /* ── PRE-MATCH LINEUP ── */
 var lineupEditQ=1;
-function setLineupQ(q,el){
+function setLineupQ(q,el,src){
   lineupEditQ=q;
-  document.querySelectorAll('#lineupQTabs .tab').forEach(function(t){t.classList.remove('active');});
-  el.classList.add('active');
-  document.getElementById('lineupQLabel').textContent='Quarter '+q+' lineup';
-  document.getElementById('lineupApplyQNum').textContent=q;
+  /* Sync modal tabs */
+  document.querySelectorAll('#lineupQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===q-1);});
+  /* Sync page tabs */
+  document.querySelectorAll('#lineupPageQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===q-1);});
+  /* Labels */
+  var lbl='Quarter '+q+' lineup';
+  if(document.getElementById('lineupQLabel'))document.getElementById('lineupQLabel').textContent=lbl;
+  if(document.getElementById('lineupPageQLabel'))document.getElementById('lineupPageQLabel').textContent=lbl;
+  if(document.getElementById('lineupApplyQNum'))document.getElementById('lineupApplyQNum').textContent=q;
+  if(document.getElementById('lineupApplyQNumPage'))document.getElementById('lineupApplyQNumPage').textContent=q;
   renderLineupAssign();
 }
 function setLineupPlayer(q,pos,val){
   if(!D.preLineup[q])D.preLineup[q]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
   D.preLineup[q][pos]=val?parseInt(val):null;
+  renderLineupOverview();
 }
 function renderLineupAssign(){
   var q=lineupEditQ;
@@ -1496,25 +1549,79 @@ function renderLineupAssign(){
   var rows='';
   POS.forEach(function(pos){
     var assigned=D.preLineup[q][pos];
-    rows+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">';
-    rows+='<div style="width:34px;height:34px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
-    rows+='<select style="flex:1" onchange="setLineupPlayer('+q+',this.dataset.pos,this.value)" data-pos="'+pos+'">';
+    rows+='<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">';
+    rows+='<div style="width:38px;height:38px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
+    rows+='<select style="flex:1;padding:8px;border-radius:8px;border:1px solid #ddd;font-size:13px" onchange="setLineupPlayer('+q+',\''+pos+'\',this.value)">';
     rows+='<option value="">— Unassigned —</option>';
     avail.forEach(function(x){rows+='<option value="'+x.id+'"'+(x.id===assigned?' selected':'')+'>'+x.first+' '+x.last+' ('+x.pos+')</option>';});
     rows+='</select></div>';
   });
-  document.getElementById('lineupAssignList').innerHTML=rows;
+  /* Render into modal */
+  var modalEl=document.getElementById('lineupAssignList');
+  if(modalEl)modalEl.innerHTML=rows;
+  /* Render into page */
+  var pageEl=document.getElementById('lineupAssignListPage');
+  if(pageEl)pageEl.innerHTML=rows;
+  renderLineupOverview();
+}
+function renderLineupOverview(){
+  var el=document.getElementById('lineupOverview');
+  if(!el)return;
+  var h='';
+  [1,2,3,4].forEach(function(q){
+    var lq=D.preLineup[q]||{};
+    h+='<div style="background:#f8f9ff;border-radius:10px;padding:10px;border:1px solid #e0e4f0">';
+    h+='<div style="font-weight:700;font-size:12px;color:#1e3a8a;margin-bottom:6px">Q'+q+'</div>';
+    POS.forEach(function(pos){
+      var pid=lq[pos];
+      var p=pid?D.players.find(function(x){return x.id===pid;}):null;
+      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+      h+='<div style="width:22px;height:22px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
+      h+='<div style="font-size:11px;color:'+(p?'#222':'#bbb')+'">'+(p?p.first+' '+p.last:'Unassigned')+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+function lineupSelectFix(fid){
+  /* Just a visual helper — lineup is global pre-match, not per-fixture yet */
+}
+function renderLineupFixSel(){
+  var el=document.getElementById('lineupFixSel');
+  if(!el)return;
+  var opts='<option value="">— Select a fixture —</option>';
+  (D.fixtures||[]).forEach(function(f){
+    opts+='<option value="'+f.id+'">'+f.date+' vs '+f.opp+(f.home?' (H)':' (A)')+'</option>';
+  });
+  el.innerHTML=opts;
 }
 function copyLineupToNextQ(){
   var nextQ=lineupEditQ<4?lineupEditQ+1:1;
   D.preLineup[nextQ]=JSON.parse(JSON.stringify(D.preLineup[lineupEditQ]||{}));
-  alert('Q'+lineupEditQ+' lineup copied to Q'+nextQ+'!');
+  /* Switch to next quarter view */
+  var pageTabs=document.querySelectorAll('#lineupPageQTabs .tab');
+  var modalTabs=document.querySelectorAll('#lineupQTabs .tab');
+  lineupEditQ=nextQ;
+  pageTabs.forEach(function(t,i){t.classList.toggle('active',i===nextQ-1);});
+  modalTabs.forEach(function(t,i){t.classList.toggle('active',i===nextQ-1);});
+  if(document.getElementById('lineupQLabel'))document.getElementById('lineupQLabel').textContent='Quarter '+nextQ+' lineup';
+  if(document.getElementById('lineupPageQLabel'))document.getElementById('lineupPageQLabel').textContent='Quarter '+nextQ+' lineup';
+  if(document.getElementById('lineupApplyQNum'))document.getElementById('lineupApplyQNum').textContent=nextQ;
+  if(document.getElementById('lineupApplyQNumPage'))document.getElementById('lineupApplyQNumPage').textContent=nextQ;
+  renderLineupAssign();
 }
-function applyLineupToCurrentQ(){
+function copyLineupAllQ(){
+  var base=JSON.parse(JSON.stringify(D.preLineup[lineupEditQ]||{}));
+  [1,2,3,4].forEach(function(q){D.preLineup[q]=JSON.parse(JSON.stringify(base));});
+  renderLineupAssign();
+  alert('Q'+lineupEditQ+' lineup copied to all quarters!');
+}
+function applyLineupToCurrentQ(fromPage){
   var q=lineupEditQ;
   var lineup=D.preLineup[q]||{};
   POS.forEach(function(pos){if(lineup[pos])D.live.assign[pos]=lineup[pos];});
-  CM('mLineup');
+  if(!fromPage)CM('mLineup');
   drawCourt();
   alert('Q'+q+' lineup applied to court!');
 }
