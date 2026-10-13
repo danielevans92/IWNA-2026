@@ -889,35 +889,41 @@ function renderStatPanel(pos){
   h+='<div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:4px">Q'+q+' stats</div>';
 
   if(isShooter){
-    h+='<div class="sdiv">Our shooting — log attempt outcome</div>';
+    var pct2=function(g,a){return a>0?Math.round(g/a*100)+'%':'—';};
+    var shotPct=pct2(qs.goals,qs.attempts);
+    var superPct=pct2(qs.superGoals,qs.superAttempts);
+    h+='<div class="sdiv">Our shooting &mdash; Sh% '+shotPct+' &nbsp;|&nbsp; &#11088; '+superPct+'</div>';
     h+='<div class="shot-grid">';
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logShot(\''+pos+'\',\'goal\')"><div class="sb-lbl" style="color:#1b5e20">✅ Goal scored</div><div class="sb-val" style="color:#1D9E75">'+qs.goals+'</div><div class="sb-sub" style="color:#2e7d32">+goal +att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logShot(\''+pos+'\',\'missOwn\')"><div class="sb-lbl" style="color:#bf360c">Miss → own reb</div><div class="sb-val" style="color:#ef6c00">'+qs.missOwn+'</div><div class="sb-sub" style="color:#e65100">+att +D.reb</div></div>';
-    h+='<div class="shot-btn" style="background:#e3f2fd;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'missTeammate\')"><div class="sb-lbl" style="color:#0d47a1">Miss → teammate reb</div><div class="sb-val" style="color:#1565c0">'+qs.missTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att +O.reb</div></div>';
-    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'missOpp\')"><div class="sb-lbl" style="color:#b71c1c">Miss → opp reb (TO)</div><div class="sb-val" style="color:#e53935">'+qs.missOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
-    h+='<div class="shot-btn" style="background:#f3e5f5;border-color:#8e24aa" onclick="logShot(\''+pos+'\',\'offReb\')"><div class="sb-lbl" style="color:#6a1b9a">Off. rebound in</div><div class="sb-val" style="color:#8e24aa">'+qs.offReb+'</div><div class="sb-sub" style="color:#7b1fa2">+O.reb</div></div>';
+    /* Row 1: Goal | Super goal */
+    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logShot(\''+pos+'\',\'goal\')"><div class="sb-lbl" style="color:#1b5e20">&#9989; Goal</div><div class="sb-val" style="color:#1D9E75">'+qs.goals+'</div><div class="sb-sub" style="color:#2e7d32">+1pt +att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logShot(\''+pos+'\',\'superGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Super goal</div><div class="sb-val" style="color:#f9a825">'+qs.superGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts +att</div></div>';
+    /* Row 2: Miss own reb | Super miss own reb */
+    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logShot(\''+pos+'\',\'missOwn\')"><div class="sb-lbl" style="color:#bf360c">Miss &#8594; own reb</div><div class="sb-val" style="color:#ef6c00">'+qs.missOwn+'</div><div class="sb-sub" style="color:#e65100">+att +D.reb</div></div>';
+    h+='<div class="shot-btn" style="background:#fff3cd;border-color:#f9a825" onclick="logShot(\''+pos+'\',\'superMissOwn\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Miss &#8594; own reb</div><div class="sb-val" style="color:#ef6c00">'+qs.superMissOwn+'</div><div class="sb-sub" style="color:#e65100">+att +D.reb</div></div>';
+    /* Row 3: Miss teammate | Super miss teammate */
+    h+='<div class="shot-btn" style="background:#e3f2fd;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'missTeammate\')"><div class="sb-lbl" style="color:#0d47a1">Miss &#8594; teammate reb</div><div class="sb-val" style="color:#1565c0">'+qs.missTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att tmReb</div></div>';
+    h+='<div class="shot-btn" style="background:#dceefb;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'superMissTeammate\')"><div class="sb-lbl" style="color:#0d47a1">&#11088; Miss &#8594; teammate</div><div class="sb-val" style="color:#1565c0">'+qs.superMissTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att tmReb</div></div>';
+    /* Row 4: Miss opp reb | Super miss opp reb */
+    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'missOpp\')"><div class="sb-lbl" style="color:#b71c1c">Miss &#8594; opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.missOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
+    h+='<div class="shot-btn" style="background:#fde8e8;border-color:#e53935" onclick="logShot(\''+pos+'\',\'superMissOpp\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Miss &#8594; opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.superMissOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
+    /* Row 5: Off reb in (spans full width) */
+    h+='<div class="shot-btn" style="background:#f3e5f5;border-color:#8e24aa;grid-column:span 2" onclick="logShot(\''+pos+'\',\'offReb\')"><div class="sb-lbl" style="color:#6a1b9a">Off. rebound in (no att)</div><div class="sb-val" style="color:#8e24aa">'+qs.offReb+'</div><div class="sb-sub" style="color:#7b1fa2">+O.reb</div></div>';
     h+='</div>';
-    h+='<button class="btn btnd btnsm" style="width:100%;margin-bottom:4px" onclick="undoLastShot(\''+pos+'\')">Undo last shot</button>';
-    h+='<div class="sdiv">Opposition shooting</div>';
-    var superPct=qs.superAttempts>0?Math.round(qs.superGoals/qs.superAttempts*100)+'%':'—';
-    h+='<div class="sdiv">&#11088; Super shots (2 pts) &mdash; Sh% '+superPct+'</div>';
+    h+='<button class="btn btnd btnsm" style="width:100%;margin-bottom:6px" onclick="undoLastShot(\''+pos+'\')">Undo last shot</button>';
+    /* Opposition shooting */
+    var oppShotPct=pct2(qs.oppGoals,qs.oppAttempts);
+    var oppSuperPct=pct2(qs.oppSuperGoals,qs.oppSuperAttempts);
+    h+='<div class="sdiv">Opposition shooting &mdash; Sh% '+oppShotPct+' &nbsp;|&nbsp; &#11088; '+oppSuperPct+'</div>';
     h+='<div class="shot-grid">';
-    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logShot(\''+pos+'\',\'superGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Super goal (+2)</div><div class="sb-val" style="color:#f9a825">'+qs.superGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts +goal +att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logShot(\''+pos+'\',\'superMissOwn\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Super miss own reb</div><div class="sb-val" style="color:#ef6c00">'+qs.superMissOwn+'</div><div class="sb-sub" style="color:#e65100">+att +D.reb</div></div>';
-    h+='<div class="shot-btn" style="background:#e3f2fd;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'superMissTeammate\')"><div class="sb-lbl" style="color:#0d47a1">&#11088; Super miss teammate</div><div class="sb-val" style="color:#1565c0">'+qs.superMissTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att +O.reb</div></div>';
-    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'superMissOpp\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Super miss opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.superMissOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
-    h+='</div>';
-    h+='<div class="shot-grid">';
-    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">Opp goal scored</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">Opp miss → our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss → their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
-    h+='</div>';
-    var oppSuperPct=qs.oppSuperAttempts>0?Math.round(qs.oppSuperGoals/qs.oppSuperAttempts*100)+'%':'—';
-    h+='<div class="sdiv">&#11088; Opp super shots (2 pts) &mdash; Sh% '+oppSuperPct+'</div>';
-    h+='<div class="shot-grid">';
-    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super (+2)</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">&#11088; Opp super our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp super their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
+    /* Row 1: Opp goal | Opp super goal */
+    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">Opp goal</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+1pt opp att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts opp att</div></div>';
+    /* Row 2: Opp miss our reb | Opp super miss our reb */
+    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
+    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">&#11088; Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
+    /* Row 3: Opp miss their reb | Opp super miss their reb */
+    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff3cd;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
     h+='</div>';
     h+='<button class="btn btnd btnsm" style="width:100%;margin-top:4px;margin-bottom:4px" onclick="undoLastOppShot(\''+pos+'\')">Undo last opp shot</button>';
   }
@@ -968,13 +974,18 @@ function logTeamTO(delta){
 function logShot(pos,type){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   var p=currentPlayer(pos);var name=p?p.first:pos;
+  /* teammate position for rebound credit: GS↔GA */
+  var tmPos=pos==='GS'?'GA':pos==='GA'?'GS':null;
+  var tmK=tmPos?apk(tmPos):null;
+  if(tmK)iLS(tmK,q);
+  var tmQs=tmK?D.live.stats[tmK][q]:null;
   if(type==='goal'){qs.goals++;qs.attempts++;logEv(name+' — goal scored');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+1;updateScoreDisplay();}}
   else if(type==='superGoal'){qs.superGoals++;qs.superAttempts++;qs.goals++;qs.attempts++;logEv(name+' ⭐ SUPER goal (+2)');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+2;updateScoreDisplay();}}
   else if(type==='superMissOwn'){qs.superMissOwn++;qs.superAttempts++;qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' ⭐ super miss, own reb');}
-  else if(type==='superMissTeammate'){qs.superMissTeammate++;qs.superAttempts++;qs.missTeammate++;qs.attempts++;qs.oReb++;logEv(name+' ⭐ super miss, teammate reb');}
+  else if(type==='superMissTeammate'){qs.superMissTeammate++;qs.superAttempts++;qs.missTeammate++;qs.attempts++;if(tmQs)tmQs.oReb++;else qs.oReb++;logEv(name+' ⭐ super miss, teammate reb');}
   else if(type==='superMissOpp'){qs.superMissOpp++;qs.superAttempts++;qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' ⭐ super miss, opp reb (TO)');}
   else if(type==='missOwn'){qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' — missed, own rebound');}
-  else if(type==='missTeammate'){qs.missTeammate++;qs.attempts++;qs.oReb++;logEv(name+' — missed, teammate rebound');}
+  else if(type==='missTeammate'){qs.missTeammate++;qs.attempts++;if(tmQs)tmQs.oReb++;else qs.oReb++;logEv(name+' — missed, teammate rebound');}
   else if(type==='missOpp'){qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' — missed, opp rebound (TO)');}
   else if(type==='offReb'){qs.offReb++;qs.oReb++;logEv(name+' — offensive rebound');}
   drawCourt();renderStatPanel(pos);
