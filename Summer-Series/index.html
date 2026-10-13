@@ -124,7 +124,6 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
   <button onclick="SP('inj')">Injuries</button>
   <button onclick="SP('fix')">Fixtures</button>
   <button onclick="SP('stats')">Stats</button>
-  <button onclick="SP('lineup')">Lineup</button>
   <button onclick="SP('court')">Court</button>
   <button onclick="SP('notes')">Notes</button>
 </div>
@@ -196,44 +195,6 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
 </div>
 
 <!-- STATS -->
-<div class="page" id="page-lineup">
-  <div style="margin-top:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:16px;font-weight:700">Match lineup planner</div>
-      <button class="btn btnsm btnd" onclick="clearAllLineup()">Clear all</button>
-    </div>
-    <div style="font-size:12px;color:#aaa;margin-bottom:10px">Plan which player plays each position per quarter. Lineups auto-load into live tracking when you switch quarters.</div>
-    <div class="tabs" id="lpQTabs" style="margin-bottom:0">
-      <div class="tab active" onclick="setLPQ(1,this)">Q1</div>
-      <div class="tab" onclick="setLPQ(2,this)">Q2</div>
-      <div class="tab" onclick="setLPQ(3,this)">Q3</div>
-      <div class="tab" onclick="setLPQ(4,this)">Q4</div>
-    </div>
-    <div class="card" style="margin-top:8px;margin-bottom:10px">
-      <div id="lpQLabel" style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:10px">Quarter 1 — assign players</div>
-      <div id="lpAssignGrid"></div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btnsm" onclick="lpCopyToNext()">Copy to next Q →</button>
-        <button class="btn btnsm btnp" onclick="lpCopyToAll()">Apply Q<span id="lpFromQ">1</span> to all quarters</button>
-      </div>
-    </div>
-    <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Player quarter summary</div>
-    <div class="card" style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:300px">
-        <thead><tr>
-          <th style="text-align:left;padding:6px 8px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Player</th>
-          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q1</th>
-          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q2</th>
-          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q3</th>
-          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q4</th>
-          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Total Qs</th>
-        </tr></thead>
-        <tbody id="lpSummaryTbl"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <div class="page" id="page-stats">
   <div style="margin-top:8px">
     <div class="tabs" id="stTabs">
@@ -561,7 +522,7 @@ var D={
 /* ── LIVE STAT HELPERS ── */
 function iLS(pos,q){
   if(!D.live.stats[pos])D.live.stats[pos]={};
-  if(!D.live.stats[pos][q])D.live.stats[pos][q]={goals:0,attempts:0,missOwn:0,missTeammate:0,missOpp:0,offReb:0,assists:0,cpr:0,pickup:0,dReb:0,oReb:0,intercepts:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0,oppGoals:0,oppAttempts:0,oppMissOurReb:0,oppMissOppReb:0,oppTOConverted:0};
+  if(!D.live.stats[pos][q])D.live.stats[pos][q]={goals:0,attempts:0,missOwn:0,missTeammate:0,missOpp:0,superGoals:0,superAttempts:0,superMissOwn:0,superMissTeammate:0,superMissOpp:0,offReb:0,assists:0,cpr:0,pickup:0,dReb:0,oReb:0,intercepts:0,deflections:0,turnovers:0,badpass:0,badhands:0,contact:0,obstruction:0,oppGoals:0,oppAttempts:0,oppMissOurReb:0,oppMissOppReb:0,oppSuperGoals:0,oppSuperAttempts:0,oppSuperMissOurReb:0,oppSuperMissOppReb:0,oppTOConverted:0};
 }
 /* Return the active stat key for a position (switches to sub key after a sub) */
 function apk(pos){return(D.live.activePosKey&&D.live.activePosKey[pos])||pos;}
@@ -597,10 +558,9 @@ function SP(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
-  var pages=['ov','sq','inj','fix','stats','lineup','court','notes'];
+  var pages=['ov','sq','inj','fix','stats','court','notes'];
   document.querySelectorAll('.nav button')[pages.indexOf(id)].classList.add('active');
   if(id==='stats'){if(D.stab==='live'){updateLiveHeader();drawCourt();}else renderSummary();}
-  else if(id==='lineup'){renderLineupPage();}
   else if(id==='court'){setTimeout(dcInitCourt,80);}
   else if(id==='notes'){setTimeout(ntInitCanvas,80);}
   else renderAll();
@@ -939,11 +899,27 @@ function renderStatPanel(pos){
     h+='</div>';
     h+='<button class="btn btnd btnsm" style="width:100%;margin-bottom:4px" onclick="undoLastShot(\''+pos+'\')">Undo last shot</button>';
     h+='<div class="sdiv">Opposition shooting</div>';
+    var superPct=qs.superAttempts>0?Math.round(qs.superGoals/qs.superAttempts*100)+'%':'—';
+    h+='<div class="sdiv">&#11088; Super shots (2 pts) &mdash; Sh% '+superPct+'</div>';
+    h+='<div class="shot-grid">';
+    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logShot(\''+pos+'\',\'superGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Super goal (+2)</div><div class="sb-val" style="color:#f9a825">'+qs.superGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts +goal +att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logShot(\''+pos+'\',\'superMissOwn\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Super miss own reb</div><div class="sb-val" style="color:#ef6c00">'+qs.superMissOwn+'</div><div class="sb-sub" style="color:#e65100">+att +D.reb</div></div>';
+    h+='<div class="shot-btn" style="background:#e3f2fd;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'superMissTeammate\')"><div class="sb-lbl" style="color:#0d47a1">&#11088; Super miss teammate</div><div class="sb-val" style="color:#1565c0">'+qs.superMissTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att +O.reb</div></div>';
+    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'superMissOpp\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Super miss opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.superMissOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
+    h+='</div>';
     h+='<div class="shot-grid">';
     h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">Opp goal scored</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+opp att</div></div>';
     h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">Opp miss → our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
     h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss → their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
     h+='</div>';
+    var oppSuperPct=qs.oppSuperAttempts>0?Math.round(qs.oppSuperGoals/qs.oppSuperAttempts*100)+'%':'—';
+    h+='<div class="sdiv">&#11088; Opp super shots (2 pts) &mdash; Sh% '+oppSuperPct+'</div>';
+    h+='<div class="shot-grid">';
+    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super (+2)</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts opp att</div></div>';
+    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">&#11088; Opp super our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp super their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
+    h+='</div>';
+    h+='<button class="btn btnd btnsm" style="width:100%;margin-top:4px;margin-bottom:4px" onclick="undoLastOppShot(\''+pos+'\')">Undo last opp shot</button>';
   }
 
   var allKeys=isShooter
@@ -993,6 +969,10 @@ function logShot(pos,type){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   var p=currentPlayer(pos);var name=p?p.first:pos;
   if(type==='goal'){qs.goals++;qs.attempts++;logEv(name+' — goal scored');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+1;updateScoreDisplay();}}
+  else if(type==='superGoal'){qs.superGoals++;qs.superAttempts++;qs.goals++;qs.attempts++;logEv(name+' ⭐ SUPER goal (+2)');if(pos==='GS'||pos==='GA'){if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.us[D.live.qtr-1]=(D.live.score.us[D.live.qtr-1]||0)+2;updateScoreDisplay();}}
+  else if(type==='superMissOwn'){qs.superMissOwn++;qs.superAttempts++;qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' ⭐ super miss, own reb');}
+  else if(type==='superMissTeammate'){qs.superMissTeammate++;qs.superAttempts++;qs.missTeammate++;qs.attempts++;qs.oReb++;logEv(name+' ⭐ super miss, teammate reb');}
+  else if(type==='superMissOpp'){qs.superMissOpp++;qs.superAttempts++;qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' ⭐ super miss, opp reb (TO)');}
   else if(type==='missOwn'){qs.missOwn++;qs.attempts++;qs.dReb++;logEv(name+' — missed, own rebound');}
   else if(type==='missTeammate'){qs.missTeammate++;qs.attempts++;qs.oReb++;logEv(name+' — missed, teammate rebound');}
   else if(type==='missOpp'){qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' — missed, opp rebound (TO)');}
@@ -1001,10 +981,38 @@ function logShot(pos,type){
 }
 function logOppShot(pos,type){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
-  if(type==='oppGoal'){qs.oppGoals++;qs.oppAttempts++;logEv('OPP goal ('+pos+')');if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+1;updateScoreDisplay();}
-  else if(type==='oppMissOurReb'){qs.oppMissOurReb++;qs.oppAttempts++;logEv('OPP miss our reb ('+pos+')');}
-  else if(type==='oppMissOppReb'){qs.oppMissOppReb++;qs.oppAttempts++;logEv('OPP miss their reb ('+pos+')');}
-  drawCourt();renderStatPanel(pos);
+  if(type==='oppGoal'){qs.oppGoals++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP goal ('+pos+')'});if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+1;updateScoreDisplay();}
+  else if(type==='oppMissOurReb'){qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP miss our reb ('+pos+')'});}
+  else if(type==='oppMissOppReb'){qs.oppMissOppReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP miss their reb ('+pos+')'});}
+  else if(type==='oppSuperGoal'){qs.oppSuperGoals++;qs.oppSuperAttempts++;qs.oppGoals++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ SUPER goal ('+pos+')'});if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+2;updateScoreDisplay();}
+  else if(type==='oppSuperMissOurReb'){qs.oppSuperMissOurReb++;qs.oppSuperAttempts++;qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ super miss our reb ('+pos+')'});}
+  else if(type==='oppSuperMissOppReb'){qs.oppSuperMissOppReb++;qs.oppSuperAttempts++;qs.oppMissOppReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ super miss their reb ('+pos+')'});}
+  drawCourt();renderEL();renderStatPanel(pos);
+}
+function undoLastOppShot(pos){
+  var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
+  var oppTypes=['oppGoal','oppMissOurReb','oppMissOppReb','oppSuperGoal','oppSuperMissOurReb','oppSuperMissOppReb'];
+  var idx=D.live.events.findIndex(function(e){return e.q===q&&oppTypes.indexOf(e.type)>-1;});
+  if(idx<0){alert('No opposition shot to undo this quarter.');return;}
+  var ev=D.live.events[idx];
+  var t=ev.type;
+  var isSuper=t==='oppSuperGoal'||t==='oppSuperMissOurReb'||t==='oppSuperMissOppReb';
+  if(t==='oppGoal'||t==='oppSuperGoal'){
+    qs.oppGoals=Math.max(0,qs.oppGoals-1);qs.oppAttempts=Math.max(0,qs.oppAttempts-1);
+    if(D.live.score){var pts=t==='oppSuperGoal'?2:1;D.live.score.them[D.live.qtr-1]=Math.max(0,(D.live.score.them[D.live.qtr-1]||0)-pts);}
+    updateScoreDisplay();
+  } else if(t==='oppMissOurReb'||t==='oppSuperMissOurReb'){
+    qs.oppMissOurReb=Math.max(0,qs.oppMissOurReb-1);qs.oppAttempts=Math.max(0,qs.oppAttempts-1);
+  } else if(t==='oppMissOppReb'||t==='oppSuperMissOppReb'){
+    qs.oppMissOppReb=Math.max(0,qs.oppMissOppReb-1);qs.oppAttempts=Math.max(0,qs.oppAttempts-1);
+  }
+  if(isSuper){
+    if(t==='oppSuperGoal')qs.oppSuperGoals=Math.max(0,qs.oppSuperGoals-1);
+    else if(t==='oppSuperMissOurReb')qs.oppSuperMissOurReb=Math.max(0,qs.oppSuperMissOurReb-1);
+    else if(t==='oppSuperMissOppReb')qs.oppSuperMissOppReb=Math.max(0,qs.oppSuperMissOppReb-1);
+    qs.oppSuperAttempts=Math.max(0,qs.oppSuperAttempts-1);
+  }
+  D.live.events.splice(idx,1);renderEL();drawCourt();renderStatPanel(pos);
 }
 function undoLastShot(pos){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
@@ -1038,7 +1046,7 @@ function saveGame(){
     var word=prompt('⚠️ Stats are already saved for this fixture.\n\nSaving again will permanently overwrite them.\n\nType OVERWRITE to confirm, or Cancel to go back:');
     if(word!=='OVERWRITE'){alert('Save cancelled — existing stats kept.');return;}
   }
-  var SK=['goals','attempts','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'];
+  var SK=['goals','attempts','superGoals','superAttempts','superMissOwn','superMissTeammate','superMissOpp','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'];
   var emptyQ=function(){var o={};SK.forEach(function(k){o[k]=0;});return o;};
 
   /* Build lineup per quarter: {1:{GS:pid,...}, 2:..., 3:..., 4:...} */
@@ -1184,7 +1192,7 @@ function renderMatchSummary(){
   var f=D.fixtures.find(function(x){return x.id===fid;});
   if(!sg){cont.innerHTML='<div class="card" style="color:#aaa;font-size:13px;text-align:center;padding:20px">No stats saved for this match.</div>';return;}
 
-  var SK=['goals','attempts','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'];
+  var SK=['goals','attempts','superGoals','superAttempts','superMissOwn','superMissTeammate','superMissOpp','assists','cpr','pickup','dReb','oReb','intercepts','deflections','turnovers','badpass','badhands','contact','obstruction'];
   function pName(pid){var p=D.players.find(function(x){return x.id==pid;});return p?p.first+' '+p.last:'Player '+pid;}
   function v(n){return n||0;}
   function pct(g,a){return a>0?Math.round(g/a*100)+'%':'—';}
@@ -1251,7 +1259,7 @@ function renderMatchSummary(){
   h+='<button id="sumTabFull" onclick="sumSetTab(\'full\')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#f5f5f5;color:#555">📊 Full Match</button>';
   h+='</div>';
 
-  var TH='<th>Player</th><th>Goals</th><th>Att</th><th>Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th><th style="background:#e8f5e9;color:#1D9E75">NP</th>';
+  var TH='<th>Player</th><th>Goals</th><th>Att</th><th>Sh%</th><th style="background:#fff9c4">&#11088;G</th><th style="background:#fff9c4">&#11088;Att</th><th style="background:#fff9c4">&#11088;Sh%</th><th>Int</th><th>CPR</th><th>Asst</th><th>Pickup</th><th>D.Reb</th><th>O.Reb</th><th>Defl</th><th>TO</th><th>BadPass</th><th>BadHands</th><th>Con</th><th>Obs</th><th style="background:#e8f5e9;color:#1D9E75">NP</th>';
 
   /* ── QUARTER VIEW ── */
   h+='<div id="sumViewQtr">';
@@ -1280,6 +1288,7 @@ function renderMatchSummary(){
         var d=x.qd;
         h+='<tr><td style="font-weight:600;white-space:nowrap">'+pName(x.pid)+'</td>';
         h+='<td class="hi">'+v(d.goals)+'</td><td>'+v(d.attempts)+'</td><td class="hi">'+pct(v(d.goals),v(d.attempts))+'</td>';
+        h+='<td style="background:#fffef0">'+v(d.superGoals)+'</td><td style="background:#fffef0">'+v(d.superAttempts)+'</td><td style="background:#fffef0">'+pct(v(d.superGoals),v(d.superAttempts))+'</td>';
         h+='<td>'+v(d.intercepts)+'</td><td>'+v(d.cpr)+'</td><td>'+v(d.assists)+'</td><td>'+v(d.pickup)+'</td>';
         h+='<td>'+v(d.dReb)+'</td><td>'+v(d.oReb)+'</td><td>'+v(d.deflections)+'</td>';
         h+='<td class="lo">'+v(d.turnovers)+'</td><td class="lo">'+v(d.badpass)+'</td><td class="lo">'+v(d.badhands)+'</td>';
@@ -1325,6 +1334,7 @@ function renderMatchSummary(){
       var t=x.tot;
       h+='<tr><td style="font-weight:600;white-space:nowrap">'+pName(x.pid)+'</td>';
       h+='<td class="hi">'+t.goals+'</td><td>'+t.attempts+'</td><td class="hi">'+pct(t.goals,t.attempts)+'</td>';
+      h+='<td style="background:#fffef0">'+(t.superGoals||0)+'</td><td style="background:#fffef0">'+(t.superAttempts||0)+'</td><td style="background:#fffef0">'+pct(t.superGoals||0,t.superAttempts||0)+'</td>';
       h+='<td>'+t.intercepts+'</td><td>'+t.cpr+'</td><td>'+t.assists+'</td><td>'+t.pickup+'</td>';
       h+='<td>'+t.dReb+'</td><td>'+t.oReb+'</td><td>'+t.deflections+'</td>';
       h+='<td class="lo">'+t.turnovers+'</td><td class="lo">'+t.badpass+'</td><td class="lo">'+t.badhands+'</td>';
@@ -1333,6 +1343,7 @@ function renderMatchSummary(){
     });
     h+='<tr style="font-weight:700;background:#f0f8ff;border-top:2px solid #bbdefb"><td>TEAM TOTAL</td>';
     h+='<td class="hi">'+teamTot.goals+'</td><td>'+teamTot.attempts+'</td><td class="hi">'+pct(teamTot.goals,teamTot.attempts)+'</td>';
+    h+='<td style="background:#fffef0">'+(teamTot.superGoals||0)+'</td><td style="background:#fffef0">'+(teamTot.superAttempts||0)+'</td><td style="background:#fffef0">'+pct(teamTot.superGoals||0,teamTot.superAttempts||0)+'</td>';
     h+='<td>'+teamTot.intercepts+'</td><td>'+teamTot.cpr+'</td><td>'+teamTot.assists+'</td><td>'+teamTot.pickup+'</td>';
     h+='<td>'+teamTot.dReb+'</td><td>'+teamTot.oReb+'</td><td>'+teamTot.deflections+'</td>';
     h+='<td class="lo">'+teamTot.turnovers+'</td><td class="lo">'+teamTot.badpass+'</td><td class="lo">'+teamTot.badhands+'</td>';
@@ -1419,111 +1430,6 @@ function renderFix(){
 
 /* ── PRE-MATCH LINEUP ── */
 var lineupEditQ=1;
-/* ─── LINEUP PLANNER ─── */
-var lpQ=1;
-
-function setLPQ(q,el){
-  lpQ=q;
-  document.querySelectorAll('#lpQTabs .tab').forEach(function(t){t.classList.remove('active');});
-  el.classList.add('active');
-  document.getElementById('lpQLabel').textContent='Quarter '+q+' — assign players';
-  document.getElementById('lpFromQ').textContent=q;
-  renderLPGrid();renderLPSummary();
-}
-
-function renderLineupPage(){
-  lpQ=1;
-  document.querySelectorAll('#lpQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});
-  document.getElementById('lpQLabel').textContent='Quarter 1 — assign players';
-  document.getElementById('lpFromQ').textContent='1';
-  renderLPGrid();renderLPSummary();
-}
-
-function renderLPGrid(){
-  if(!D.preLineup[lpQ])D.preLineup[lpQ]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
-  var avail=D.players.filter(function(x){return x.avail!=='injured';});
-  var rows='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-  POS.forEach(function(pos){
-    var assigned=D.preLineup[lpQ][pos];
-    rows+='<div style="background:#f8f9fb;border-radius:10px;padding:8px;border:1px solid #e8e8e8">';
-    rows+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">';
-    rows+='<div style="width:26px;height:26px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
-    rows+='<span style="font-size:11px;font-weight:700;color:#333">'+pos+'</span></div>';
-    rows+='<select data-q="'+lpQ+'" data-pos="'+pos+'" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;background:#fff" onchange="lpSetPlayer(+this.dataset.q,this.dataset.pos,this.value)">';
-    rows+='<option value="">— Unassigned —</option>';
-    avail.forEach(function(x){
-      var pl=(x.positions&&x.positions.length?x.positions:[x.pos]).join('/');
-      rows+='<option value="'+x.id+'"'+(x.id===assigned?' selected':'')+'>'+x.first+' '+x.last+' ('+pl+')</option>';
-    });
-    rows+='</select></div>';
-  });
-  rows+='</div>';
-  document.getElementById('lpAssignGrid').innerHTML=rows;
-}
-
-function lpSetPlayer(q,pos,val){
-  if(!D.preLineup[q])D.preLineup[q]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
-  D.preLineup[q][pos]=val?parseInt(val):null;
-  renderLPSummary();
-  if(typeof saveToCloud==='function')saveToCloud();
-}
-
-function lpCopyToNext(){
-  var nq=lpQ<4?lpQ+1:1;
-  D.preLineup[nq]=JSON.parse(JSON.stringify(D.preLineup[lpQ]||{}));
-  var tabs=document.querySelectorAll('#lpQTabs .tab');
-  tabs.forEach(function(t){t.classList.remove('active');});
-  tabs[nq-1].classList.add('active');
-  lpQ=nq;
-  document.getElementById('lpQLabel').textContent='Quarter '+nq+' — assign players';
-  document.getElementById('lpFromQ').textContent=nq;
-  renderLPGrid();renderLPSummary();
-}
-
-function lpCopyToAll(){
-  var src=JSON.parse(JSON.stringify(D.preLineup[lpQ]||{}));
-  [1,2,3,4].forEach(function(q){if(q!==lpQ)D.preLineup[q]=JSON.parse(JSON.stringify(src));});
-  renderLPSummary();
-  if(typeof saveToCloud==='function')saveToCloud();
-  var btn=event.target;var orig=btn.textContent;
-  btn.textContent='✓ Applied to all!';btn.disabled=true;
-  setTimeout(function(){btn.textContent=orig;btn.disabled=false;},1400);
-}
-
-function clearAllLineup(){
-  if(!confirm('Clear all quarter lineups?'))return;
-  D.preLineup={
-    1:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
-    2:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
-    3:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
-    4:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null}
-  };
-  renderLPGrid();renderLPSummary();
-  if(typeof saveToCloud==='function')saveToCloud();
-}
-
-function renderLPSummary(){
-  var tbody=document.getElementById('lpSummaryTbl');
-  if(!tbody)return;
-  var map={};
-  D.players.forEach(function(p){map[p.id]={qtrs:['','','','']};});
-  [1,2,3,4].forEach(function(q){
-    var lu=D.preLineup[q]||{};
-    POS.forEach(function(pos){var pid=lu[pos];if(pid&&map[pid])map[pid].qtrs[q-1]=pos;});
-  });
-  var rows='';
-  D.players.filter(function(p){return p.avail!=='injured';}).forEach(function(p){
-    var m=map[p.id];if(!m)return;
-    var total=m.qtrs.filter(function(v){return v!=='';}).length;
-    var qCells=m.qtrs.map(function(v){
-      if(!v)return'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5;color:#ccc">—</td>';
-      return'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:'+PC[v]+';color:white;font-size:8px;font-weight:900">'+v+'</span></td>';
-    }).join('');
-    rows+='<tr><td style="padding:6px 8px;font-weight:600;border-bottom:1px solid #f5f5f5;font-size:12px;white-space:nowrap">'+p.first+' '+p.last+'</td>'+qCells+'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5">'+(total>0?'<span style="font-weight:700;color:#1D9E75">'+total+'</span>':'<span style="color:#ccc">0</span>')+'</td></tr>';
-  });
-  tbody.innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:16px;font-size:13px">No players in squad yet</td></tr>';
-}
-
 function setLineupQ(q,el){
   lineupEditQ=q;
   document.querySelectorAll('#lineupQTabs .tab').forEach(function(t){t.classList.remove('active');});
@@ -1808,7 +1714,7 @@ async function loadFromCloud(){
       var cloud = JSON.parse(res.data.payload);
       if(cloud.players  && cloud.players.length)  D.players    = cloud.players;
       if(cloud.injuries && cloud.injuries.length)  D.injuries   = cloud.injuries;
-      /* fixtures intentionally NOT loaded from cloud — managed in HTML */
+      // fixtures are HTML-only — not loaded from cloud
       if(cloud.sStats   && cloud.sStats.length)    D.sStats     = cloud.sStats;
       if(cloud.savedGames)                         D.savedGames = cloud.savedGames;
       if(cloud.preLineup)                          D.preLineup  = cloud.preLineup;
@@ -1834,7 +1740,7 @@ async function saveToCloud(){
     var payload = JSON.stringify({
       players:    D.players,
       injuries:   D.injuries,
-      /* fixtures intentionally excluded — managed in HTML */
+      // fixtures excluded — managed in HTML only
       sStats:     D.sStats,
       savedGames: D.savedGames,
       preLineup:  D.preLineup,
