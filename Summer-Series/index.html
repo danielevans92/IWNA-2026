@@ -918,9 +918,14 @@ function renderStatPanel(pos){
     /* Row 1: Opp goal | Opp super goal */
     h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">Opp goal</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+1pt opp att</div></div>';
     h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts opp att</div></div>';
-    /* Row 2: Opp miss our reb | Opp super miss our reb */
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#1D9E75" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">&#11088; Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">+opp att</div></div>';
+    /* Row 2-3: Opp miss our reb — 4 buttons: GD reb / GK reb, regular + super */
+    var gdPid2=D.live.assign['GD'];var gkPid2=D.live.assign['GK'];
+    var gdN2=gdPid2?(D.players.find(function(x){return x.id===gdPid2;})||{first:'GD'}).first:'GD';
+    var gkN2=gkPid2?(D.players.find(function(x){return x.id===gkPid2;})||{first:'GK'}).first:'GK';
+    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#ef5350" onclick="logDefReb(\''+pos+'\',\'oppMissOurReb\',\'GD\')"><div class="sb-lbl" style="color:#b71c1c">Opp miss &#8594; '+gdN2+' (GD)</div><div class="sb-val" style="color:#ef5350">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#c62828">+dReb GD</div></div>';
+    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#ff7043" onclick="logDefReb(\''+pos+'\',\'oppMissOurReb\',\'GK\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; '+gkN2+' (GK)</div><div class="sb-val" style="color:#ff7043">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#e64a19">+dReb GK</div></div>';
+    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#ef5350" onclick="logDefReb(\''+pos+'\',\'oppSuperMissOurReb\',\'GD\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Opp miss &#8594; '+gdN2+' (GD)</div><div class="sb-val" style="color:#ef5350">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#c62828">+dReb GD</div></div>';
+    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#ff7043" onclick="logDefReb(\''+pos+'\',\'oppSuperMissOurReb\',\'GK\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; '+gkN2+' (GK)</div><div class="sb-val" style="color:#ff7043">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#e64a19">+dReb GK</div></div>';
     /* Row 3: Opp miss their reb | Opp super miss their reb */
     h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
     h+='<div class="shot-btn" style="background:#fff3cd;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
@@ -990,13 +995,22 @@ function logShot(pos,type){
   else if(type==='offReb'){qs.offReb++;qs.oReb++;logEv(name+' — offensive rebound');}
   drawCourt();renderStatPanel(pos);
 }
-function logOppShot(pos,type){
+function logDefReb(shooterPos,type,rebPos){
+  /* Credit dReb to the chosen defender (GD or GK) then log the opp shot */
+  var q=D.live.qtr;
+  var rk=apk(rebPos);iLS(rk,q);
+  D.live.stats[rk][q].dReb++;
+  var rp=D.live.assign[rebPos]?D.players.find(function(x){return x.id===D.live.assign[rebPos];}):null;
+  var rname=rp?rp.first:rebPos;
+  logOppShot(shooterPos,type,rebPos,rname);
+}
+function logOppShot(pos,type,rebPos,rname){
   var q=D.live.qtr;var k=apk(pos);iLS(k,q);var qs=D.live.stats[k][q];
   if(type==='oppGoal'){qs.oppGoals++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP goal ('+pos+')'});if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+1;updateScoreDisplay();}
-  else if(type==='oppMissOurReb'){qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP miss our reb ('+pos+')'});}
+  else if(type==='oppMissOurReb'){qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,rebPos:rebPos,msg:'OPP miss our reb ('+(rname||rebPos||'?')+' dReb) via '+pos});}
   else if(type==='oppMissOppReb'){qs.oppMissOppReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP miss their reb ('+pos+')'});}
   else if(type==='oppSuperGoal'){qs.oppSuperGoals++;qs.oppSuperAttempts++;qs.oppGoals++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ SUPER goal ('+pos+')'});if(!D.live.score)D.live.score={us:[0,0,0,0],them:[0,0,0,0]};D.live.score.them[D.live.qtr-1]=(D.live.score.them[D.live.qtr-1]||0)+2;updateScoreDisplay();}
-  else if(type==='oppSuperMissOurReb'){qs.oppSuperMissOurReb++;qs.oppSuperAttempts++;qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ super miss our reb ('+pos+')'});}
+  else if(type==='oppSuperMissOurReb'){qs.oppSuperMissOurReb++;qs.oppSuperAttempts++;qs.oppMissOurReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,rebPos:rebPos,msg:'OPP ⭐ super miss our reb ('+(rname||rebPos||'?')+' dReb) via '+pos});}
   else if(type==='oppSuperMissOppReb'){qs.oppSuperMissOppReb++;qs.oppSuperAttempts++;qs.oppMissOppReb++;qs.oppAttempts++;D.live.events.unshift({q:q,pos:k,type:type,msg:'OPP ⭐ super miss their reb ('+pos+')'});}
   drawCourt();renderEL();renderStatPanel(pos);
 }
@@ -1014,6 +1028,8 @@ function undoLastOppShot(pos){
     updateScoreDisplay();
   } else if(t==='oppMissOurReb'||t==='oppSuperMissOurReb'){
     qs.oppMissOurReb=Math.max(0,qs.oppMissOurReb-1);qs.oppAttempts=Math.max(0,qs.oppAttempts-1);
+    /* also undo the dReb credited to defender */
+    if(ev.rebPos){var rk2=apk(ev.rebPos);iLS(rk2,q);D.live.stats[rk2][q].dReb=Math.max(0,(D.live.stats[rk2][q].dReb||0)-1);}
   } else if(t==='oppMissOppReb'||t==='oppSuperMissOppReb'){
     qs.oppMissOppReb=Math.max(0,qs.oppMissOppReb-1);qs.oppAttempts=Math.max(0,qs.oppAttempts-1);
   }
