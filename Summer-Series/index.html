@@ -330,6 +330,17 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
 
 <!-- LINEUP PAGE -->
 <div class="page" id="page-lineup">
+
+  <!-- Week unavailability card -->
+  <div class="card" style="padding:14px;margin-bottom:10px">
+    <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#c62828">🚫 Unavailable this week</div>
+    <p style="font-size:12px;color:#888;margin:0 0 10px">Tap players to mark them out for this match. They'll be hidden from the lineup dropdowns below. Resets each time you plan a new match.</p>
+    <div id="lineupWeekUnavailGrid" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <div style="margin-top:8px;text-align:right">
+      <span onclick="lineupClearWeekUnavail()" style="font-size:11px;color:#1565c0;cursor:pointer;text-decoration:underline">Clear all</span>
+    </div>
+  </div>
+
   <div class="card" style="padding:14px">
     <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#1e3a8a">📋 Match lineup planner</div>
     <p style="font-size:12px;color:#888;margin:0 0 12px">Plan your starting positions for each quarter. These auto-load when you switch quarters during live tracking.</p>
@@ -606,7 +617,7 @@ function SP(id){
   var pages=['ov','sq','inj','fix','lineup','stats','court','notes'];
   document.querySelectorAll('.nav button')[pages.indexOf(id)].classList.add('active');
   if(id==='stats'){if(D.stab==='live'){updateLiveHeader();drawCourt();}else renderSummary();}
-  else if(id==='lineup'){renderLineupFixSel();renderLineupAssign();}
+  else if(id==='lineup'){renderLineupFixSel();renderWeekUnavailGrid();renderLineupAssign();}
   else if(id==='court'){setTimeout(dcInitCourt,80);}
   else if(id==='notes'){setTimeout(ntInitCanvas,80);}
   else renderAll();
@@ -1523,6 +1534,43 @@ function renderFix(){
 
 /* ── PRE-MATCH LINEUP ── */
 var lineupEditQ=1;
+var lineupWeekUnavail=[]; /* array of player IDs unavailable this week — resets on clear */
+
+function renderWeekUnavailGrid(){
+  var el=document.getElementById('lineupWeekUnavailGrid');
+  if(!el)return;
+  var eligible=D.players.filter(function(x){return x.avail!=='injured';});
+  if(!eligible.length){el.innerHTML='<div style="font-size:12px;color:#aaa">No players in squad yet</div>';return;}
+  el.innerHTML=eligible.map(function(p){
+    var out=lineupWeekUnavail.indexOf(p.id)>-1;
+    return '<div onclick="toggleWeekUnavail('+p.id+')" style="cursor:pointer;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:600;border:2px solid '+(out?'#e53935':'#ddd')+';background:'+(out?'#ffebee':'#f9f9f9')+';color:'+(out?'#b71c1c':'#444')+';display:flex;align-items:center;gap:5px">'
+      +'<div style="width:20px;height:20px;border-radius:50%;background:'+PC[p.pos]+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:white">'+p.pos+'</div>'
+      +p.first+' '+p.last
+      +(out?' ✕':'')
+      +'</div>';
+  }).join('');
+}
+function toggleWeekUnavail(pid){
+  var idx=lineupWeekUnavail.indexOf(pid);
+  if(idx>-1)lineupWeekUnavail.splice(idx,1);
+  else lineupWeekUnavail.push(pid);
+  /* If this player was assigned in any quarter, clear them out */
+  [1,2,3,4].forEach(function(q){
+    if(!D.preLineup[q])return;
+    Object.keys(D.preLineup[q]).forEach(function(pos){
+      if(D.preLineup[q][pos]===pid)D.preLineup[q][pos]=null;
+    });
+  });
+  renderWeekUnavailGrid();
+  renderLineupAssign();
+  renderLineupOverview();
+}
+function lineupClearWeekUnavail(){
+  lineupWeekUnavail=[];
+  renderWeekUnavailGrid();
+  renderLineupAssign();
+  renderLineupOverview();
+}
 function setLineupQ(q,el,src){
   lineupEditQ=q;
   /* Sync modal tabs */
@@ -1545,7 +1593,7 @@ function setLineupPlayer(q,pos,val){
 function renderLineupAssign(){
   var q=lineupEditQ;
   if(!D.preLineup[q])D.preLineup[q]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
-  var avail=D.players.filter(function(x){return x.avail!=='injured';});
+  var avail=D.players.filter(function(x){return x.avail!=='injured'&&lineupWeekUnavail.indexOf(x.id)===-1;});
   var rows='';
   POS.forEach(function(pos){
     var assigned=D.preLineup[q][pos];
@@ -1577,7 +1625,8 @@ function renderLineupOverview(){
       var p=pid?D.players.find(function(x){return x.id===pid;}):null;
       h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
       h+='<div style="width:22px;height:22px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
-      h+='<div style="font-size:11px;color:'+(p?'#222':'#bbb')+'">'+(p?p.first+' '+p.last:'Unassigned')+'</div>';
+      var weekOut=p&&lineupWeekUnavail.indexOf(p.id)>-1;
+      h+='<div style="font-size:11px;color:'+(p?(weekOut?'#e53935':'#222'):'#bbb')+(weekOut?';text-decoration:line-through':'')+'">'+(p?p.first+' '+p.last:'Unassigned')+(weekOut?' 🚫':'')+'</div>';
       h+='</div>';
     });
     h+='</div>';
