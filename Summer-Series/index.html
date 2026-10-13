@@ -904,33 +904,26 @@ function renderStatPanel(pos){
     h+='<div class="shot-btn" style="background:#e3f2fd;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'missTeammate\')"><div class="sb-lbl" style="color:#0d47a1">Miss &#8594; teammate reb</div><div class="sb-val" style="color:#1565c0">'+qs.missTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att tmReb</div></div>';
     h+='<div class="shot-btn" style="background:#dceefb;border-color:#1565c0" onclick="logShot(\''+pos+'\',\'superMissTeammate\')"><div class="sb-lbl" style="color:#0d47a1">&#11088; Miss &#8594; teammate</div><div class="sb-val" style="color:#1565c0">'+qs.superMissTeammate+'</div><div class="sb-sub" style="color:#1565c0">+att tmReb</div></div>';
     /* Row 4: Miss opp reb | Super miss opp reb */
-    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'missOpp\')"><div class="sb-lbl" style="color:#b71c1c">Miss &#8594; opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.missOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
-    h+='<div class="shot-btn" style="background:#fde8e8;border-color:#e53935" onclick="logShot(\''+pos+'\',\'superMissOpp\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Miss &#8594; opp (TO)</div><div class="sb-val" style="color:#e53935">'+qs.superMissOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
+    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logShot(\''+pos+'\',\'missOpp\')"><div class="sb-lbl" style="color:#b71c1c">Miss &#8594; their reb</div><div class="sb-val" style="color:#e53935">'+qs.missOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
+    h+='<div class="shot-btn" style="background:#fde8e8;border-color:#e53935" onclick="logShot(\''+pos+'\',\'superMissOpp\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Miss &#8594; their reb</div><div class="sb-val" style="color:#e53935">'+qs.superMissOpp+'</div><div class="sb-sub" style="color:#c62828">+att +TO</div></div>';
     /* Row 5: Off reb in (spans full width) */
     h+='<div class="shot-btn" style="background:#f3e5f5;border-color:#8e24aa;grid-column:span 2" onclick="logShot(\''+pos+'\',\'offReb\')"><div class="sb-lbl" style="color:#6a1b9a">Off. rebound in (no att)</div><div class="sb-val" style="color:#8e24aa">'+qs.offReb+'</div><div class="sb-sub" style="color:#7b1fa2">+O.reb</div></div>';
     h+='</div>';
     h+='<button class="btn btnd btnsm" style="width:100%;margin-bottom:6px" onclick="undoLastShot(\''+pos+'\')">Undo last shot</button>';
-    /* Opposition shooting */
-    var oppShotPct=pct2(qs.oppGoals,qs.oppAttempts);
-    var oppSuperPct=pct2(qs.oppSuperGoals,qs.oppSuperAttempts);
-    h+='<div class="sdiv">Opposition shooting &mdash; Sh% '+oppShotPct+' &nbsp;|&nbsp; &#11088; '+oppSuperPct+'</div>';
+    /* Their shooting — simplified */
+    h+='<div class="sdiv">Their shooting</div>';
     h+='<div class="shot-grid">';
-    /* Row 1: Opp goal | Opp super goal */
-    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">Opp goal</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+1pt opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts opp att</div></div>';
-    /* Row 2-3: Opp miss our reb — 4 buttons: GD reb / GK reb, regular + super */
-    var gdPid2=D.live.assign['GD'];var gkPid2=D.live.assign['GK'];
-    var gdN2=gdPid2?(D.players.find(function(x){return x.id===gdPid2;})||{first:'GD'}).first:'GD';
-    var gkN2=gkPid2?(D.players.find(function(x){return x.id===gkPid2;})||{first:'GK'}).first:'GK';
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#ef5350" onclick="logDefReb(\''+pos+'\',\'oppMissOurReb\',\'GD\')"><div class="sb-lbl" style="color:#b71c1c">Opp miss &#8594; '+gdN2+' (GD)</div><div class="sb-val" style="color:#ef5350">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#c62828">+dReb GD</div></div>';
-    h+='<div class="shot-btn" style="background:#e8f5e9;border-color:#ff7043" onclick="logDefReb(\''+pos+'\',\'oppMissOurReb\',\'GK\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; '+gkN2+' (GK)</div><div class="sb-val" style="color:#ff7043">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#e64a19">+dReb GK</div></div>';
-    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#ef5350" onclick="logDefReb(\''+pos+'\',\'oppSuperMissOurReb\',\'GD\')"><div class="sb-lbl" style="color:#b71c1c">&#11088; Opp miss &#8594; '+gdN2+' (GD)</div><div class="sb-val" style="color:#ef5350">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#c62828">+dReb GD</div></div>';
-    h+='<div class="shot-btn" style="background:#dff5e8;border-color:#ff7043" onclick="logDefReb(\''+pos+'\',\'oppSuperMissOurReb\',\'GK\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; '+gkN2+' (GK)</div><div class="sb-val" style="color:#ff7043">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#e64a19">+dReb GK</div></div>';
-    /* Row 3: Opp miss their reb | Opp super miss their reb */
-    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
-    h+='<div class="shot-btn" style="background:#fff3cd;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+opp att</div></div>';
+    /* Opp goal | Opp super goal */
+    h+='<div class="shot-btn" style="background:#ffebee;border-color:#e53935" onclick="logOppShot(\''+pos+'\',\'oppGoal\')"><div class="sb-lbl" style="color:#b71c1c">&#127943; Opp goal</div><div class="sb-val" style="color:#e53935">'+qs.oppGoals+'</div><div class="sb-sub" style="color:#c62828">+1pt</div></div>';
+    h+='<div class="shot-btn" style="background:#fff9c4;border-color:#f9a825" onclick="logOppShot(\''+pos+'\',\'oppSuperGoal\')"><div class="sb-lbl" style="color:#e65100">&#11088; Opp super goal</div><div class="sb-val" style="color:#f9a825">'+qs.oppSuperGoals+'</div><div class="sb-sub" style="color:#ef6c00">+2pts</div></div>';
+    /* Opp miss our reb — single button that expands to GD/GK */
+    h+='<div id="rebrow_reg_'+pos+'" class="shot-btn" style="background:#e8f5e9;border-color:#1D9E75" onclick="expandRebBtn(\''+pos+'\',\'oppMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">tap to assign</div></div>';
+    h+='<div id="rebrow_sup_'+pos+'" class="shot-btn" style="background:#dff5e8;border-color:#1D9E75" onclick="expandRebBtn(\''+pos+'\',\'oppSuperMissOurReb\')"><div class="sb-lbl" style="color:#1b5e20">&#11088; Opp miss &#8594; our reb</div><div class="sb-val" style="color:#1D9E75">'+qs.oppSuperMissOurReb+'</div><div class="sb-sub" style="color:#2e7d32">tap to assign</div></div>';
+    /* Opp miss their reb */
+    h+='<div class="shot-btn" style="background:#fff8e1;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+att</div></div>';
+    h+='<div class="shot-btn" style="background:#fff3cd;border-color:#ef6c00" onclick="logOppShot(\''+pos+'\',\'oppSuperMissOppReb\')"><div class="sb-lbl" style="color:#bf360c">&#11088; Opp miss &#8594; their reb</div><div class="sb-val" style="color:#ef6c00">'+qs.oppSuperMissOppReb+'</div><div class="sb-sub" style="color:#e65100">+att</div></div>';
     h+='</div>';
-    h+='<button class="btn btnd btnsm" style="width:100%;margin-top:4px;margin-bottom:4px" onclick="undoLastOppShot(\''+pos+'\')">Undo last opp shot</button>';
+    h+='<button class="btn btnd btnsm" style="width:100%;margin-top:4px;margin-bottom:4px" onclick="undoLastOppShot(\''+pos+'\')" >Undo last opp shot</button>';
   }
 
   var allKeys=isShooter
@@ -994,6 +987,33 @@ function logShot(pos,type){
   else if(type==='missOpp'){qs.missOpp++;qs.attempts++;qs.turnovers++;logEv(name+' — missed, opp rebound (TO)');}
   else if(type==='offReb'){qs.offReb++;qs.oReb++;logEv(name+' — offensive rebound');}
   drawCourt();renderStatPanel(pos);
+}
+function expandRebBtn(shooterPos,type){
+  /* Replace the tapped single button with two half-width GD / GK buttons inline */
+  var elId=type==='oppMissOurReb'?'rebrow_reg_'+shooterPos:'rebrow_sup_'+shooterPos;
+  var el=document.getElementById(elId);
+  if(!el)return;
+  var gdPid=D.live.assign['GD'];var gkPid=D.live.assign['GK'];
+  var gdP=gdPid?D.players.find(function(x){return x.id===gdPid;}):null;
+  var gkP=gkPid?D.players.find(function(x){return x.id===gkPid;}):null;
+  var gdN=gdP?gdP.first:'GD';
+  var gkN=gkP?gkP.first:'GK';
+  var isSuper=type==='oppSuperMissOurReb';
+  var lbl=isSuper?'&#11088; ':'' ;
+  /* Build a wrapper that replaces the original button, same grid cell */
+  var wrapper=document.createElement('div');
+  wrapper.style.cssText='display:flex;gap:6px;grid-column:span 1';
+  /* logDefReb calls renderStatPanel which rebuilds the whole panel, resetting back automatically */
+  wrapper.innerHTML=
+    '<div class="shot-btn" style="flex:1;padding:8px 4px;background:#e8f5e9;border-color:#ef5350;min-height:68px" onclick="logDefReb(\''+shooterPos+'\',\''+type+'\',\'GD\')">'
+    +'<div class="sb-lbl" style="color:#b71c1c;font-size:9px">'+lbl+gdN+'<br>GD reb</div>'
+    +'<div class="sb-val" style="color:#ef5350;font-size:18px">✓</div>'
+    +'</div>'
+    +'<div class="shot-btn" style="flex:1;padding:8px 4px;background:#e8f5e9;border-color:#ff7043;min-height:68px" onclick="logDefReb(\''+shooterPos+'\',\''+type+'\',\'GK\')">'
+    +'<div class="sb-lbl" style="color:#bf360c;font-size:9px">'+lbl+gkN+'<br>GK reb</div>'
+    +'<div class="sb-val" style="color:#ff7043;font-size:18px">✓</div>'
+    +'</div>';
+  el.parentNode.replaceChild(wrapper,el);
 }
 function logDefReb(shooterPos,type,rebPos){
   /* Credit dReb to the chosen defender (GD or GK) then log the opp shot */
