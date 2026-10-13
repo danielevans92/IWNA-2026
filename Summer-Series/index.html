@@ -124,6 +124,7 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
   <button onclick="SP('inj')">Injuries</button>
   <button onclick="SP('fix')">Fixtures</button>
   <button onclick="SP('stats')">Stats</button>
+  <button onclick="SP('lineup')">Lineup</button>
   <button onclick="SP('court')">Court</button>
   <button onclick="SP('notes')">Notes</button>
 </div>
@@ -195,6 +196,44 @@ label{display:block;font-size:11px;color:#888;margin-bottom:3px;font-weight:600}
 </div>
 
 <!-- STATS -->
+<div class="page" id="page-lineup">
+  <div style="margin-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:16px;font-weight:700">Match lineup planner</div>
+      <button class="btn btnsm btnd" onclick="clearAllLineup()">Clear all</button>
+    </div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:10px">Plan which player plays each position per quarter. Lineups auto-load into live tracking when you switch quarters.</div>
+    <div class="tabs" id="lpQTabs" style="margin-bottom:0">
+      <div class="tab active" onclick="setLPQ(1,this)">Q1</div>
+      <div class="tab" onclick="setLPQ(2,this)">Q2</div>
+      <div class="tab" onclick="setLPQ(3,this)">Q3</div>
+      <div class="tab" onclick="setLPQ(4,this)">Q4</div>
+    </div>
+    <div class="card" style="margin-top:8px;margin-bottom:10px">
+      <div id="lpQLabel" style="font-size:11px;font-weight:700;color:#1e3a8a;margin-bottom:10px">Quarter 1 — assign players</div>
+      <div id="lpAssignGrid"></div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btnsm" onclick="lpCopyToNext()">Copy to next Q →</button>
+        <button class="btn btnsm btnp" onclick="lpCopyToAll()">Apply Q<span id="lpFromQ">1</span> to all quarters</button>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Player quarter summary</div>
+    <div class="card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:300px">
+        <thead><tr>
+          <th style="text-align:left;padding:6px 8px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Player</th>
+          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q1</th>
+          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q2</th>
+          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q3</th>
+          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Q4</th>
+          <th style="text-align:center;padding:6px 4px;font-weight:700;color:#888;border-bottom:1px solid #eee;font-size:11px">Total Qs</th>
+        </tr></thead>
+        <tbody id="lpSummaryTbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-stats">
   <div style="margin-top:8px">
     <div class="tabs" id="stTabs">
@@ -558,9 +597,10 @@ function SP(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
-  var pages=['ov','sq','inj','fix','stats','court','notes'];
+  var pages=['ov','sq','inj','fix','stats','lineup','court','notes'];
   document.querySelectorAll('.nav button')[pages.indexOf(id)].classList.add('active');
   if(id==='stats'){if(D.stab==='live'){updateLiveHeader();drawCourt();}else renderSummary();}
+  else if(id==='lineup'){renderLineupPage();}
   else if(id==='court'){setTimeout(dcInitCourt,80);}
   else if(id==='notes'){setTimeout(ntInitCanvas,80);}
   else renderAll();
@@ -1379,6 +1419,111 @@ function renderFix(){
 
 /* ── PRE-MATCH LINEUP ── */
 var lineupEditQ=1;
+/* ─── LINEUP PLANNER ─── */
+var lpQ=1;
+
+function setLPQ(q,el){
+  lpQ=q;
+  document.querySelectorAll('#lpQTabs .tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('lpQLabel').textContent='Quarter '+q+' — assign players';
+  document.getElementById('lpFromQ').textContent=q;
+  renderLPGrid();renderLPSummary();
+}
+
+function renderLineupPage(){
+  lpQ=1;
+  document.querySelectorAll('#lpQTabs .tab').forEach(function(t,i){t.classList.toggle('active',i===0);});
+  document.getElementById('lpQLabel').textContent='Quarter 1 — assign players';
+  document.getElementById('lpFromQ').textContent='1';
+  renderLPGrid();renderLPSummary();
+}
+
+function renderLPGrid(){
+  if(!D.preLineup[lpQ])D.preLineup[lpQ]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
+  var avail=D.players.filter(function(x){return x.avail!=='injured';});
+  var rows='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  POS.forEach(function(pos){
+    var assigned=D.preLineup[lpQ][pos];
+    rows+='<div style="background:#f8f9fb;border-radius:10px;padding:8px;border:1px solid #e8e8e8">';
+    rows+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">';
+    rows+='<div style="width:26px;height:26px;border-radius:50%;background:'+PC[pos]+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:white;flex-shrink:0">'+pos+'</div>';
+    rows+='<span style="font-size:11px;font-weight:700;color:#333">'+pos+'</span></div>';
+    rows+='<select data-q="'+lpQ+'" data-pos="'+pos+'" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:12px;background:#fff" onchange="lpSetPlayer(+this.dataset.q,this.dataset.pos,this.value)">';
+    rows+='<option value="">— Unassigned —</option>';
+    avail.forEach(function(x){
+      var pl=(x.positions&&x.positions.length?x.positions:[x.pos]).join('/');
+      rows+='<option value="'+x.id+'"'+(x.id===assigned?' selected':'')+'>'+x.first+' '+x.last+' ('+pl+')</option>';
+    });
+    rows+='</select></div>';
+  });
+  rows+='</div>';
+  document.getElementById('lpAssignGrid').innerHTML=rows;
+}
+
+function lpSetPlayer(q,pos,val){
+  if(!D.preLineup[q])D.preLineup[q]={GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null};
+  D.preLineup[q][pos]=val?parseInt(val):null;
+  renderLPSummary();
+  if(typeof saveToCloud==='function')saveToCloud();
+}
+
+function lpCopyToNext(){
+  var nq=lpQ<4?lpQ+1:1;
+  D.preLineup[nq]=JSON.parse(JSON.stringify(D.preLineup[lpQ]||{}));
+  var tabs=document.querySelectorAll('#lpQTabs .tab');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  tabs[nq-1].classList.add('active');
+  lpQ=nq;
+  document.getElementById('lpQLabel').textContent='Quarter '+nq+' — assign players';
+  document.getElementById('lpFromQ').textContent=nq;
+  renderLPGrid();renderLPSummary();
+}
+
+function lpCopyToAll(){
+  var src=JSON.parse(JSON.stringify(D.preLineup[lpQ]||{}));
+  [1,2,3,4].forEach(function(q){if(q!==lpQ)D.preLineup[q]=JSON.parse(JSON.stringify(src));});
+  renderLPSummary();
+  if(typeof saveToCloud==='function')saveToCloud();
+  var btn=event.target;var orig=btn.textContent;
+  btn.textContent='✓ Applied to all!';btn.disabled=true;
+  setTimeout(function(){btn.textContent=orig;btn.disabled=false;},1400);
+}
+
+function clearAllLineup(){
+  if(!confirm('Clear all quarter lineups?'))return;
+  D.preLineup={
+    1:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
+    2:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
+    3:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null},
+    4:{GS:null,GA:null,WA:null,C:null,WD:null,GD:null,GK:null}
+  };
+  renderLPGrid();renderLPSummary();
+  if(typeof saveToCloud==='function')saveToCloud();
+}
+
+function renderLPSummary(){
+  var tbody=document.getElementById('lpSummaryTbl');
+  if(!tbody)return;
+  var map={};
+  D.players.forEach(function(p){map[p.id]={qtrs:['','','','']};});
+  [1,2,3,4].forEach(function(q){
+    var lu=D.preLineup[q]||{};
+    POS.forEach(function(pos){var pid=lu[pos];if(pid&&map[pid])map[pid].qtrs[q-1]=pos;});
+  });
+  var rows='';
+  D.players.filter(function(p){return p.avail!=='injured';}).forEach(function(p){
+    var m=map[p.id];if(!m)return;
+    var total=m.qtrs.filter(function(v){return v!=='';}).length;
+    var qCells=m.qtrs.map(function(v){
+      if(!v)return'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5;color:#ccc">—</td>';
+      return'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:'+PC[v]+';color:white;font-size:8px;font-weight:900">'+v+'</span></td>';
+    }).join('');
+    rows+='<tr><td style="padding:6px 8px;font-weight:600;border-bottom:1px solid #f5f5f5;font-size:12px;white-space:nowrap">'+p.first+' '+p.last+'</td>'+qCells+'<td style="text-align:center;padding:6px 4px;border-bottom:1px solid #f5f5f5">'+(total>0?'<span style="font-weight:700;color:#1D9E75">'+total+'</span>':'<span style="color:#ccc">0</span>')+'</td></tr>';
+  });
+  tbody.innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:16px;font-size:13px">No players in squad yet</td></tr>';
+}
+
 function setLineupQ(q,el){
   lineupEditQ=q;
   document.querySelectorAll('#lineupQTabs .tab').forEach(function(t){t.classList.remove('active');});
@@ -1663,7 +1808,7 @@ async function loadFromCloud(){
       var cloud = JSON.parse(res.data.payload);
       if(cloud.players  && cloud.players.length)  D.players    = cloud.players;
       if(cloud.injuries && cloud.injuries.length)  D.injuries   = cloud.injuries;
-      if(cloud.fixtures && cloud.fixtures.length)  D.fixtures   = cloud.fixtures;
+      /* fixtures intentionally NOT loaded from cloud — managed in HTML */
       if(cloud.sStats   && cloud.sStats.length)    D.sStats     = cloud.sStats;
       if(cloud.savedGames)                         D.savedGames = cloud.savedGames;
       if(cloud.preLineup)                          D.preLineup  = cloud.preLineup;
@@ -1689,7 +1834,7 @@ async function saveToCloud(){
     var payload = JSON.stringify({
       players:    D.players,
       injuries:   D.injuries,
-      fixtures:   D.fixtures,
+      /* fixtures intentionally excluded — managed in HTML */
       sStats:     D.sStats,
       savedGames: D.savedGames,
       preLineup:  D.preLineup,
